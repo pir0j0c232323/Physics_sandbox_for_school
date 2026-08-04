@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://cwcnn6iamhx58"]
+
+[ext_resource type="Script" uid="uid://f4j80ek46v4b" path="res://Ball.gd" id="1_jiowd"]
+[ext_resource type="Texture2D" uid="uid://5dgd502s73rp" path="res://889541.png" id="1_wltir"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_qtu10"]
+friction = 0.3
+bounce = 0.7
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1n5va"]
+radius = 18.248287
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ws5ts"]
+radius = 9.0
+
+[node name="круг" type="RigidBody2D" unique_id=906599561]
+physics_material_override = SubResource("PhysicsMaterial_qtu10")
+script = ExtResource("1_jiowd")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=859913570]
+position = Vector2(-0.09376395, -0.09376395)
+scale = Vector2(0.07067867, 0.07067867)
+texture = ExtResource("1_wltir")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1857373515]
+shape = SubResource("CircleShape2D_1n5va")
+
+[node name="Area2D" type="Area2D" parent="." unique_id=439676949]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=98586924]
+scale = Vector2(2, 2)
+shape = SubResource("CircleShape2D_ws5ts")
+
+[connection signal="input_event" from="." to="." method="_on_input_event"]

@@ -1,0 +1,14 @@
+[gd_resource type="Theme" format=3 uid="uid://kuicygtlifr3"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dmjyp"]
+bg_color = Color(0.21176471, 0.21176471, 0.21176471, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+corner_detail = 20
+
+[resource]
+resource_name = "ui_theme.tres"
+PanelContainer/styles/panel = SubResource("StyleBoxFlat_dmjyp")
+SplitContainer/constants/separation = 4

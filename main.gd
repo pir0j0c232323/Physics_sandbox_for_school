@@ -1,0 +1,253 @@
+extends Node2D
+
+# Прелоады сцен
+var new_ball = preload("res://rigid_body_2d.tscn")
+var new_rectangle = preload("res://прямоугольник.tscn")
+var new_triangle = preload("res://треугольник.tscn")
+
+# Текущий выбранный тип объекта
+var number_selected_object = 0
+var selected_object = null
+var grabbed_object = null
+var is_dragging = false
+var grab_offset
+var original_layer = 1
+var original_mask = 1
+var is_simulating = false
+var is_paused = false
+# UI элементы
+@onready var menu_button: MenuButton = $CanvasLayer/VBoxContainer/HBoxContainer/MenuButton
+@onready var mechanics_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel
+@onready var molecular_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MolecularPanel
+@onready var electricity_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/ElectricityPanel
+
+# Кнопки механики
+@onready var circle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/CircleButton
+@onready var rectangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/RectangleButton
+@onready var triangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/TriangleButton
+@onready var play_pause_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/Play_Pause_Button
+@onready var stop_button =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/StopButton
+@onready var speed_slider =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/HSlider
+
+func _ready():
+	# === НАСТРОЙКА МЕНЮ ===
+	menu_button.custom_minimum_size = Vector2(60, 60)
+	menu_button.text = "☰"
+	print("Слайдер: ", speed_slider)
+	
+
+	# === ПОДКЛЮЧЕНИЕ КНОПОК МЕХАНИКИ ===
+	if circle_button:
+		circle_button.pressed.connect(_on_circle_pressed)
+	if rectangle_button:
+		rectangle_button.pressed.connect(_on_rectangle_pressed)
+	if triangle_button:
+		triangle_button.pressed.connect(_on_triangle_pressed)
+	
+	if play_pause_button:
+		play_pause_button.text = "▶"
+		play_pause_button.pressed.connect(on_play_pause_pressed)
+	if stop_button:
+		stop_button.pressed.connect(_on_stop_pressed)
+		stop_button.text = "⏹"
+	if speed_slider:
+		speed_slider.value_changed.connect(_on_speed_changed)
+	
+	# Показываем механику по умолчанию
+	_show_panel(0)
+
+func _on_menu_selected(id):
+	_show_panel(id)
+
+func _show_panel(index):
+	mechanics_panel.visible = (index == 0)
+	molecular_panel.visible = (index == 1)
+	electricity_panel.visible = (index == 2)
+
+# === ОБРАБОТЧИКИ КНОПОК ===
+func _on_circle_pressed():
+	number_selected_object = 0
+	print("Выбран: Круг")
+
+func _on_rectangle_pressed():
+	number_selected_object = 1
+	print("Выбран: Прямоугольник")
+
+func _on_triangle_pressed():
+	number_selected_object = 2
+	print("Выбран: Треугольник")
+
+# === ФИЗИЧЕСКОЕ ДВИЖЕНИЕ ===
+func _physics_process(delta: float) -> void:
+	var world_pos = get_global_mouse_position()
+	if is_dragging == true and is_instance_valid(grabbed_object):
+		grabbed_object.global_position = world_pos + grab_offset
+
+# === ОБРАБОТКА КЛИКОВ ПО МИРУ ===
+func _unhandled_input(event: InputEvent):
+	# Левый клик мыши
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		handle_left_click()
+	#отпускание левой кнопки мышки
+	elif event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		stop_grab()
+	# Удаление объектов
+	if event.is_action_pressed("delete_all"):
+		delete_all_objects()
+	if event.is_action_pressed("delete_selected"):
+		delete_selected_object()
+	if event.is_action_pressed("ui_cancel"):
+		deselect_object()
+
+func handle_left_click():
+	var world_pos = get_global_mouse_position()
+	
+	# Проверяем что под курсором
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = world_pos
+	var space_state = get_world_2d().direct_space_state
+	var result = space_state.intersect_point(query)
+	
+	# Если ничего нет — создаём объект
+	if is_simulating == true:
+		return
+	elif result.size() == 0:
+		create_object(number_selected_object, world_pos)
+	else:
+		# Если кликнули на объект — выделяем его
+		var clicked_object = result[0].collider
+		if clicked_object is RigidBody2D:
+			select_object(clicked_object)
+			start_grab(clicked_object)
+
+func create_object(type, position):
+	var scene
+	match type:
+		0: scene = new_ball
+		1: scene = new_rectangle
+		2: scene = new_triangle
+	
+	if scene:
+		var new_object = scene.instantiate()
+		new_object.position = position
+		
+		# Случайный цвет
+		var random_color = Color(randf(), randf(), randf(), 1)
+		if new_object.has_method("set_color"):
+			new_object.set_color(random_color)
+		
+		add_child(new_object)
+		new_object.freeze = true
+		print("Объект создан в позиции: ", position)
+
+func select_object(object):
+	deselect_object()
+	
+	selected_object = object
+	selected_object.select_object()
+	print("Объект выделен")
+
+func deselect_object():
+	if selected_object != null and is_instance_valid(selected_object):
+		selected_object.deselect_object()
+	selected_object = null
+
+func object_clicked(object):
+	select_object(object)
+
+func ball_clicked(object):
+	select_object(object)
+
+func delete_all_objects():
+	is_dragging = false
+	grabbed_object = null
+	for child in get_children():
+		if child is RigidBody2D:
+			child.queue_free()
+	selected_object = null
+	print("Все объекты удалены!")
+
+func delete_selected_object():
+	if selected_object != null:
+		if selected_object == grabbed_object:
+			is_dragging = false
+			grabbed_object = null
+		selected_object.queue_free()
+		selected_object = null
+		print("Объект удалён!")
+		
+func start_grab(object):
+	if is_simulating == true:
+		return
+	elif grabbed_object == null:
+		grabbed_object = object
+		grab_offset = object.global_position - get_global_mouse_position()
+		grabbed_object.freeze = true
+		#исходная колизия
+		original_layer = grabbed_object.collision_layer
+		original_mask = grabbed_object.collision_mask
+		#призрак
+		grabbed_object.collision_layer = 0
+		grabbed_object.collision_mask = 0
+		is_dragging = true
+
+func stop_grab():
+	if is_dragging == true and grabbed_object != null and is_instance_valid(grabbed_object):
+		grabbed_object.collision_layer = original_layer
+		grabbed_object.collision_mask = original_mask
+		grabbed_object.freeze = false
+		grabbed_object.linear_velocity = Vector2.ZERO
+		grabbed_object.angular_velocity = 0
+	is_dragging = false
+	grabbed_object = null
+
+func start_simulation():
+	if is_dragging == true and is_instance_valid(grabbed_object):
+		stop_grab()
+	for child in get_children():
+		if child is RigidBody2D:
+			child.freeze = false
+	is_simulating = true
+	
+func stop_simulation():
+	for child in get_children():
+		if child is RigidBody2D:
+			child.freeze = true
+			child.linear_velocity = Vector2.ZERO
+			child.angular_velocity = 0
+	is_simulating = false
+
+func on_play_pause_pressed():
+	if not is_simulating:
+		start_simulation()
+		is_paused = false
+		play_pause_button.text = "⏸"
+		print("редактирование")
+	elif not is_paused:
+		pause_simulation()
+		is_paused = true
+		play_pause_button.text = "▶"
+		print("симуляция")
+	else:
+		resume_simulation()
+		is_paused = false
+		play_pause_button.text = "⏸"
+		print("пауза")
+
+func _on_stop_pressed():
+	stop_simulation()               # уже есть (freeze + обнулить скорости)
+	is_paused = false
+	play_pause_button.text = "▶"
+
+func pause_simulation():
+	for child in get_children():
+		if child is RigidBody2D:
+			child.freeze = true     # НЕ обнуляем скорости!
+
+func resume_simulation():
+	for child in get_children():
+		if child is RigidBody2D:
+			child.freeze = false
+
+func _on_speed_changed(value):
+	Engine.time_scale = value 

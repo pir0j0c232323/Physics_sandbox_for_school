@@ -15,6 +15,9 @@ corner_detail = 20
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dmjyp"]
 corner_detail = 20
 
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_1n5va"]
+distance = -5.0
+
 [node name="Main" type="Node2D" unique_id=2017057063]
 script = ExtResource("1_h2yge")
 
@@ -123,7 +126,7 @@ theme_override_constants/margin_bottom = 8
 [node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer" unique_id=1922708637]
 layout_mode = 2
 
-[node name="StopButton" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer" unique_id=1018490200]
+[node name="edit_button" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer" unique_id=1018490200]
 custom_minimum_size = Vector2(60, 60)
 custom_maximum_size = Vector2(60, 60)
 layout_mode = 2
@@ -145,3 +148,9 @@ value = 1.0
 [node name="RightPanel" type="PanelContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer" unique_id=2094676318]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1415401202]
+position = Vector2(500, 540)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=107825967]
+shape = SubResource("WorldBoundaryShape2D_1n5va")

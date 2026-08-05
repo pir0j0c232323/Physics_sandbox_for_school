@@ -13,8 +13,7 @@ var is_dragging = false
 var grab_offset
 var original_layer = 1
 var original_mask = 1
-var is_simulating = false
-var is_paused = false
+var state = "EDIT"
 # UI элементы
 @onready var menu_button: MenuButton = $CanvasLayer/VBoxContainer/HBoxContainer/MenuButton
 @onready var mechanics_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel
@@ -26,7 +25,7 @@ var is_paused = false
 @onready var rectangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/RectangleButton
 @onready var triangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/TriangleButton
 @onready var play_pause_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/Play_Pause_Button
-@onready var stop_button =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/StopButton
+@onready var edit_button =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/edit_button
 @onready var speed_slider =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/HSlider
 
 func _ready():
@@ -47,9 +46,9 @@ func _ready():
 	if play_pause_button:
 		play_pause_button.text = "▶"
 		play_pause_button.pressed.connect(on_play_pause_pressed)
-	if stop_button:
-		stop_button.pressed.connect(_on_stop_pressed)
-		stop_button.text = "⏹"
+	if edit_button:
+		edit_button.pressed.connect(_on_stop_pressed)
+		edit_button.text = "🔧"
 	if speed_slider:
 		speed_slider.value_changed.connect(_on_speed_changed)
 	
@@ -109,8 +108,7 @@ func handle_left_click():
 	var result = space_state.intersect_point(query)
 	
 	# Если ничего нет — создаём объект
-	if is_simulating == true:
-		return
+	if not can_edit(): return
 	elif result.size() == 0:
 		create_object(number_selected_object, world_pos)
 	else:
@@ -121,6 +119,7 @@ func handle_left_click():
 			start_grab(clicked_object)
 
 func create_object(type, position):
+	if not can_edit(): return
 	var scene
 	match type:
 		0: scene = new_ball
@@ -177,8 +176,7 @@ func delete_selected_object():
 		print("Объект удалён!")
 		
 func start_grab(object):
-	if is_simulating == true:
-		return
+	if not can_edit(): return
 	elif grabbed_object == null:
 		grabbed_object = object
 		grab_offset = object.global_position - get_global_mouse_position()
@@ -207,7 +205,7 @@ func start_simulation():
 	for child in get_children():
 		if child is RigidBody2D:
 			child.freeze = false
-	is_simulating = true
+	state = "PLAY"
 	
 func stop_simulation():
 	for child in get_children():
@@ -215,34 +213,38 @@ func stop_simulation():
 			child.freeze = true
 			child.linear_velocity = Vector2.ZERO
 			child.angular_velocity = 0
-	is_simulating = false
-
-func on_play_pause_pressed():
-	if not is_simulating:
-		start_simulation()
-		is_paused = false
-		play_pause_button.text = "⏸"
-		print("редактирование")
-	elif not is_paused:
-		pause_simulation()
-		is_paused = true
-		play_pause_button.text = "▶"
-		print("симуляция")
-	else:
-		resume_simulation()
-		is_paused = false
-		play_pause_button.text = "⏸"
-		print("пауза")
-
-func _on_stop_pressed():
-	stop_simulation()               # уже есть (freeze + обнулить скорости)
-	is_paused = false
-	play_pause_button.text = "▶"
+	state = "EDIT"
 
 func pause_simulation():
 	for child in get_children():
 		if child is RigidBody2D:
-			child.freeze = true     # НЕ обнуляем скорости!
+			child.freeze = true # НЕ обнуляем скорости!
+			state = "PAUSE"    
+
+func on_play_pause_pressed():
+	if state == "EDIT":
+		start_simulation()
+		state = "PLAY"
+		play_pause_button.text = "⏸"
+	elif state == "PLAY":
+		pause_simulation()
+		state = "PAUSE"
+		play_pause_button.text = "▶"
+	else: # PAUSE
+		resume_simulation()
+		state = "PLAY"
+		play_pause_button.text = "⏸"
+
+func on_edit_pressed():
+	if state == "PAUSE":
+		stop_simulation()
+		state = "EDIT"
+		play_pause_button.text = "🔧"
+
+func _on_stop_pressed():
+	stop_simulation()               # уже есть (freeze + обнулить скорости)
+	if not can_edit(): return
+	play_pause_button.text = "▶"
 
 func resume_simulation():
 	for child in get_children():
@@ -251,3 +253,7 @@ func resume_simulation():
 
 func _on_speed_changed(value):
 	Engine.time_scale = value 
+
+# /// ТАБЛИЦА СОСТОЯНИЙ ///
+func can_edit():
+	return state == "EDIT" or state == "PAUSE"

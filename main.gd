@@ -47,13 +47,14 @@ func _ready():
 		play_pause_button.text = "▶"
 		play_pause_button.pressed.connect(on_play_pause_pressed)
 	if edit_button:
-		edit_button.pressed.connect(_on_stop_pressed)
+		edit_button.pressed.connect(on_edit_pressed)
 		edit_button.text = "🔧"
 	if speed_slider:
 		speed_slider.value_changed.connect(_on_speed_changed)
 	
 	# Показываем механику по умолчанию
 	_show_panel(0)
+	update_ui()
 
 func _on_menu_selected(id):
 	_show_panel(id)
@@ -174,7 +175,7 @@ func delete_selected_object():
 		selected_object.queue_free()
 		selected_object = null
 		print("Объект удалён!")
-		
+
 func start_grab(object):
 	if not can_edit(): return
 	elif grabbed_object == null:
@@ -199,6 +200,30 @@ func stop_grab():
 	is_dragging = false
 	grabbed_object = null
 
+# /// Отрисовщик кнопок на ui ///
+func update_ui():
+	if state == "PLAY":
+		play_pause_button.text = "⏸️"
+		play_pause_button.add_theme_color_override("font_color",Color.YELLOW)
+		
+		edit_button.disabled = true
+		edit_button.text = "❌"
+		edit_button.add_theme_color_override("font_color",Color.WEB_GRAY)
+	elif state == "PAUSE":
+		play_pause_button.text = "▶️"
+		play_pause_button.add_theme_color_override("font_color",Color.LIME_GREEN)
+		
+		edit_button.disabled = false
+		edit_button.text = "🔧"
+		edit_button.add_theme_color_override("font_color",Color.WHITE)
+	else:
+		play_pause_button.text = "▶️"
+		play_pause_button.add_theme_color_override("font_color",Color.BLUE)
+		
+		edit_button.disabled = true
+		edit_button.text = "❌"
+		edit_button.add_theme_color_override("font_color",Color.WEB_GRAY)
+# /// СИМУЛЯЦИИ /// 
 func start_simulation():
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		stop_grab()
@@ -206,7 +231,7 @@ func start_simulation():
 		if child is RigidBody2D:
 			child.freeze = false
 	state = "PLAY"
-	
+
 func stop_simulation():
 	for child in get_children():
 		if child is RigidBody2D:
@@ -223,28 +248,22 @@ func pause_simulation():
 
 func on_play_pause_pressed():
 	if state == "EDIT":
-		start_simulation()
+		start_simulation() #EDIT→PLAY
 		state = "PLAY"
-		play_pause_button.text = "⏸"
 	elif state == "PLAY":
-		pause_simulation()
+		pause_simulation() #PLAY→PAUSE
 		state = "PAUSE"
-		play_pause_button.text = "▶"
-	else: # PAUSE
-		resume_simulation()
+	else: 
+		resume_simulation() #PAUSE→PLAY
 		state = "PLAY"
-		play_pause_button.text = "⏸"
+	update_ui()
 
 func on_edit_pressed():
 	if state == "PAUSE":
-		stop_simulation()
+		stop_simulation() #PAUSE→EDIT
 		state = "EDIT"
-		play_pause_button.text = "🔧"
+		update_ui()
 
-func _on_stop_pressed():
-	stop_simulation()               # уже есть (freeze + обнулить скорости)
-	if not can_edit(): return
-	play_pause_button.text = "▶"
 
 func resume_simulation():
 	for child in get_children():

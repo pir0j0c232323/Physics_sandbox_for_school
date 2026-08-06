@@ -1,5 +1,7 @@
 extends RigidBody2D
 
+@export var is_static = false
+
 var is_selected = false
 var selection_outline = null
 var orig_color

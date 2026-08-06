@@ -14,12 +14,13 @@ var grab_offset
 var original_layer = 1
 var original_mask = 1
 var state = "EDIT"
+
 # UI элементы
 @onready var menu_button: MenuButton = $CanvasLayer/VBoxContainer/HBoxContainer/MenuButton
 @onready var mechanics_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel
 @onready var molecular_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MolecularPanel
 @onready var electricity_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/ElectricityPanel
-
+@onready var right_tabs = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer
 # Кнопки механики
 @onready var circle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/CircleButton
 @onready var rectangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/RectangleButton
@@ -27,6 +28,7 @@ var state = "EDIT"
 @onready var play_pause_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/Play_Pause_Button
 @onready var edit_button =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/edit_button
 @onready var speed_slider =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/HSlider
+@onready var gravity_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World/GRAVITY
 
 func _ready():
 	# === НАСТРОЙКА МЕНЮ ===
@@ -35,7 +37,7 @@ func _ready():
 	print("Слайдер: ", speed_slider)
 	
 
-	# === ПОДКЛЮЧЕНИЕ КНОПОК МЕХАНИКИ ===
+	# === ПОДКЛЮЧЕНИЕ КНОПОК  ===
 	if circle_button:
 		circle_button.pressed.connect(_on_circle_pressed)
 	if rectangle_button:
@@ -50,8 +52,10 @@ func _ready():
 		edit_button.pressed.connect(on_edit_pressed)
 		edit_button.text = "🔧"
 	if speed_slider:
-		speed_slider.value_changed.connect(_on_speed_changed)
+		speed_slider.value_changed.connect(on_speed_changed)
 	
+	if gravity_button:
+		gravity_button.toggled.connect(on_gravity_pressed)
 	# Показываем механику по умолчанию
 	_show_panel(0)
 	update_ui()
@@ -138,6 +142,7 @@ func create_object(type, position):
 		
 		add_child(new_object)
 		new_object.freeze = true
+		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
 		print("Объект создан в позиции: ", position)
 
 func select_object(object):
@@ -146,11 +151,13 @@ func select_object(object):
 	selected_object = object
 	selected_object.select_object()
 	print("Объект выделен")
+	right_tabs.current_tab = 1 #обьекты
 
 func deselect_object():
 	if selected_object != null and is_instance_valid(selected_object):
 		selected_object.deselect_object()
 	selected_object = null
+	right_tabs.current_tab = 0 #мир
 
 func object_clicked(object):
 	select_object(object)
@@ -231,7 +238,7 @@ func start_simulation():
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		stop_grab()
 	for child in get_children():
-		if child is RigidBody2D:
+		if child is RigidBody2D and not child.is_static:
 			child.freeze = false
 	state = "PLAY"
 
@@ -249,6 +256,11 @@ func pause_simulation():
 			child.freeze = true # НЕ обнуляем скорости!
 			state = "PAUSE"    
 
+func resume_simulation():
+	for child in get_children():
+		if child is RigidBody2D:
+			child.freeze = false
+
 func on_play_pause_pressed():
 	if state == "EDIT":
 		start_simulation() #EDIT→PLAY
@@ -261,19 +273,21 @@ func on_play_pause_pressed():
 		state = "PLAY"
 	update_ui()
 
+func on_gravity_pressed(value):
+	if value == true:
+		gravity_button.text = "ГРАВИТАЦИЯ ВКЛ"
+	else:
+		gravity_button.text = "ГРАВИТАЦИЯ ВЫКЛ"
+	for child in get_children():
+		if child is RigidBody2D:
+			child.gravity_scale = 1 if value else 0
 func on_edit_pressed():
 	if state == "PAUSE":
 		stop_simulation() #PAUSE→EDIT
 		state = "EDIT"
 		update_ui()
 
-
-func resume_simulation():
-	for child in get_children():
-		if child is RigidBody2D:
-			child.freeze = false
-
-func _on_speed_changed(value):
+func on_speed_changed(value):
 	Engine.time_scale = value 
 
 # /// ТАБЛИЦА СОСТОЯНИЙ ///

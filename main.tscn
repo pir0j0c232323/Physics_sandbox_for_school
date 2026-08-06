@@ -15,6 +15,22 @@ corner_detail = 20
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dmjyp"]
 corner_detail = 20
 
+[sub_resource type="FontFile" id="FontFile_1n5va"]
+cache/0/variation_coordinates = {}
+cache/0/face_index = 0
+cache/0/embolden = 0.0
+cache/0/transform = Transform2D(1, 0, 0, 1, 0, 0)
+cache/0/spacing_top = 0
+cache/0/spacing_bottom = 0
+cache/0/spacing_space = 0
+cache/0/spacing_glyph = 0
+cache/0/baseline_offset = 0.0
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_1n5va"]
 distance = -5.0
 
@@ -148,6 +164,24 @@ value = 1.0
 [node name="RightPanel" type="PanelContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer" unique_id=2094676318]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
+
+[node name="TabContainer" type="TabContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel" unique_id=238483611]
+layout_mode = 2
+current_tab = 0
+
+[node name="World" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=1314560991]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="GRAVITY" type="CheckButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World" unique_id=1425381414]
+layout_mode = 2
+theme_override_fonts/font = SubResource("FontFile_1n5va")
+text = "ГРАВИТАЦИЯ ВЫКЛ"
+
+[node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1415401202]
 position = Vector2(500, 540)

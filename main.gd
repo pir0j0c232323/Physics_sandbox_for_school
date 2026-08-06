@@ -194,7 +194,10 @@ func stop_grab():
 	if is_dragging == true and grabbed_object != null and is_instance_valid(grabbed_object):
 		grabbed_object.collision_layer = original_layer
 		grabbed_object.collision_mask = original_mask
-		grabbed_object.freeze = false
+		if state == "EDIT":
+			selected_object.freeze = true
+		else:
+			grabbed_object.freeze = false
 		grabbed_object.linear_velocity = Vector2.ZERO
 		grabbed_object.angular_velocity = 0
 	is_dragging = false

@@ -9,6 +9,10 @@ var is_selected = false
 var selection_outline = null
 var orig_color
 
+func update_size():
+	$Polygon2D.scale = Vector2(custom_scale, custom_scale)
+	$CollisionPolygon2D.scale = Vector2(custom_scale, custom_scale)
+
 func _ready() -> void:
 	$Polygon2D.color = orig_color
 func _on_input_event(viewport, event, shape_idx) -> void:

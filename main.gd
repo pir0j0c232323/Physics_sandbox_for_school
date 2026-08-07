@@ -161,7 +161,7 @@ func create_object(type, position):
 		
 		add_child(new_object)
 		new_object.mass = new_object.custom_mass
-		new_object.scale = Vector2(new_object.custom_scale, new_object.custom_scale)
+		#new_object.scale = Vector2(new_object.custom_scale, new_object.custom_scale)
 		new_object.set_color(new_object.custom_color)
 		new_object.freeze = true
 		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
@@ -290,9 +290,9 @@ func start_simulation():
 			child.mass = child.custom_mass
 			#child.scale = Vector2(child.custom_scale, child.custom_scale)
 			# Синхронизируем дочерние визуальные узлы с родительским scale
-			for visual_child in child.get_children():
-				if visual_child is Polygon2D or visual_child is Sprite2D:
-					visual_child.scale = Vector2(child.custom_scale, child.custom_scale)
+			#for visual_child in child.get_children():
+				#if visual_child is Polygon2D or visual_child is Sprite2D:
+				#	visual_child.scale = Vector2(child.custom_scale, child.custom_scale)
 			print("После применения scale =", child.scale)
 			child.set_color(child.custom_color)
 	state = "PLAY"
@@ -357,9 +357,8 @@ func on_scale_changed(value):
 	if selected_object:
 		selected_object.custom_scale = value
 		print("Scale изменён: custom_scale =", selected_object.custom_scale)
-		print("🔴 on_scale_changed сработал! value =", value)
-		if state == "PAUSE" or state == "EDIT":
-			selected_object.scale = Vector2(value, value)
+		if selected_object.has_method("update_size"):
+			selected_object.update_size()
 
 func on_color_object_chanded(new_color):
 	if selected_object:

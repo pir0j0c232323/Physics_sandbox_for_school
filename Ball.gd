@@ -13,6 +13,10 @@ func _on_input_event(viewport, event, shape_idx) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		get_parent().ball_clicked(self)
 
+func update_size():
+	$Sprite2D.scale = Vector2(custom_scale, custom_scale)
+	$CollisionShape2D.scale = Vector2(custom_scale, custom_scale)
+	
 func select_object():
 	if is_selected:
 		return

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b28clexryfjlg"]
 
-[ext_resource type="Script" uid="uid://qi6cl4hjetl6" path="res://треугольник.gd" id="1_bju4p"]
+[ext_resource type="Script" uid="uid://d1trwq01ekmka" path="res://треугольник.gd" id="1_bju4p"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1n5va"]
 

@@ -94,14 +94,17 @@ layout_mode = 2
 [node name="CircleButton" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=1551007663]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
+text = "○"
 
 [node name="RectangleButton" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=541510125]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
+text = "▭"
 
 [node name="TriangleButton" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=654558549]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
+text = "△"
 
 [node name="VSplitContainer" type="VSplitContainer" parent="CanvasLayer/VBoxContainer" unique_id=436612331]
 layout_mode = 2
@@ -198,10 +201,10 @@ text = "РАЗМЕР"
 
 [node name="Scale_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1951950113]
 layout_mode = 2
-min_value = 0.1
+min_value = 0.01
 max_value = 10.0
-step = 0.1
-value = 1.0
+step = 0.01
+value = 1.01
 
 [node name="Label3" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=911530577]
 layout_mode = 2

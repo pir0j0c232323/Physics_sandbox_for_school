@@ -167,9 +167,10 @@ layout_mode = 2
 
 [node name="TabContainer" type="TabContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel" unique_id=238483611]
 layout_mode = 2
-current_tab = 0
+current_tab = 1
 
 [node name="World" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=1314560991]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -179,9 +180,13 @@ theme_override_fonts/font = SubResource("FontFile_1n5va")
 text = "ГРАВИТАЦИЯ ВЫКЛ"
 
 [node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 1
+
+[node name="SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=862498572]
+layout_mode = 2
+step = 0.1
+value = 1.0
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1415401202]
 position = Vector2(500, 540)

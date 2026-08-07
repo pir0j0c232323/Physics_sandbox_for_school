@@ -25,11 +25,14 @@ var state = "EDIT"
 @onready var circle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/CircleButton
 @onready var rectangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/RectangleButton
 @onready var triangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/TriangleButton
+# Кнопки старт\пауза\редакт\скорость
 @onready var play_pause_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/Play_Pause_Button
 @onready var edit_button =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/edit_button
 @onready var speed_slider =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/HSlider
+# Кнопки параметра мира
 @onready var gravity_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World/GRAVITY
-
+# Кнопки параметра обьектов
+@onready var Mass_SpinBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/SpinBox
 func _ready():
 	# === НАСТРОЙКА МЕНЮ ===
 	menu_button.custom_minimum_size = Vector2(60, 60)
@@ -56,6 +59,9 @@ func _ready():
 	
 	if gravity_button:
 		gravity_button.toggled.connect(on_gravity_pressed)
+		
+	if Mass_SpinBox:
+		Mass_SpinBox.value_changed.connect(on_mass_chaged)
 	# Показываем механику по умолчанию
 	_show_panel(0)
 	update_ui()
@@ -141,15 +147,18 @@ func create_object(type, position):
 			new_object.set_color(random_color)
 		
 		add_child(new_object)
+		new_object.mass = new_object.custom_mass
 		new_object.freeze = true
 		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
-		print("Объект создан в позиции: ", position)
+		print("Объект создан в позиции: ", position, "МАССА", new_object.mass)
 
 func select_object(object):
 	deselect_object()
 	
+	
 	selected_object = object
 	selected_object.select_object()
+	Mass_SpinBox.value = object.custom_mass
 	print("Объект выделен")
 	right_tabs.current_tab = 1 #обьекты
 
@@ -158,6 +167,7 @@ func deselect_object():
 		selected_object.deselect_object()
 	selected_object = null
 	right_tabs.current_tab = 0 #мир
+	Mass_SpinBox.value = 0
 
 func object_clicked(object):
 	select_object(object)
@@ -240,6 +250,7 @@ func start_simulation():
 	for child in get_children():
 		if child is RigidBody2D and not child.is_static:
 			child.freeze = false
+			child.mass = child.custom_mass
 	state = "PLAY"
 
 func stop_simulation():
@@ -290,6 +301,11 @@ func on_edit_pressed():
 func on_speed_changed(value):
 	Engine.time_scale = value 
 
+func on_mass_chaged(value):
+	if selected_object is RigidBody2D:
+		selected_object.custom_mass = value
+		if state == "PAUSE" or state == "EDIT":
+			selected_object.mass = value
 # /// ТАБЛИЦА СОСТОЯНИЙ ///
 func can_edit():
 	return state == "EDIT" or state == "PAUSE"

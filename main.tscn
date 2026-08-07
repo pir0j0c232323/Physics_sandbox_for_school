@@ -183,10 +183,32 @@ text = "ГРАВИТАЦИЯ ВЫКЛ"
 layout_mode = 2
 metadata/_tab_index = 1
 
+[node name="Label" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=257089073]
+layout_mode = 2
+text = "МАССА"
+
 [node name="SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=862498572]
 layout_mode = 2
 step = 0.1
 value = 1.0
+
+[node name="Label2" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1801490245]
+layout_mode = 2
+text = "РАЗМЕР"
+
+[node name="Scale_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1951950113]
+layout_mode = 2
+min_value = 0.1
+max_value = 10.0
+step = 0.1
+value = 1.0
+
+[node name="Label3" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=911530577]
+layout_mode = 2
+text = "ЦВЕТ"
+
+[node name="ColorPickerButton" type="ColorPickerButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=972767928]
+layout_mode = 2
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1415401202]
 position = Vector2(500, 540)

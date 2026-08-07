@@ -33,6 +33,9 @@ var state = "EDIT"
 @onready var gravity_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World/GRAVITY
 # Кнопки параметра обьектов
 @onready var Mass_SpinBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/SpinBox
+@onready var Scale_SpinBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Scale_SpinBox
+@onready var Color_picedbuton_object = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/ColorPickerButton
+
 func _ready():
 	# === НАСТРОЙКА МЕНЮ ===
 	menu_button.custom_minimum_size = Vector2(60, 60)
@@ -56,12 +59,18 @@ func _ready():
 		edit_button.text = "🔧"
 	if speed_slider:
 		speed_slider.value_changed.connect(on_speed_changed)
-	
+	# кнопки панели мира
 	if gravity_button:
 		gravity_button.toggled.connect(on_gravity_pressed)
-		
+	# кнопки панели обьектов
 	if Mass_SpinBox:
-		Mass_SpinBox.value_changed.connect(on_mass_chaged)
+		Mass_SpinBox.value_changed.connect(on_mass_changed)
+	if Scale_SpinBox:
+		Scale_SpinBox.value_changed.connect(on_scale_changed)
+	if Color_picedbuton_object:
+		Color_picedbuton_object.color_changed.connect(on_color_object_chanded)
+	
+	
 	# Показываем механику по умолчанию
 	_show_panel(0)
 	update_ui()
@@ -92,6 +101,10 @@ func _physics_process(delta: float) -> void:
 	var world_pos = get_global_mouse_position()
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		grabbed_object.global_position = world_pos + grab_offset
+		
+	for child in get_children():
+		if child is RigidBody2D:
+			print("Кадр | name=", child.name, " scale=", child.scale)
 
 # === ОБРАБОТКА КЛИКОВ ПО МИРУ ===
 func _unhandled_input(event: InputEvent):
@@ -148,17 +161,30 @@ func create_object(type, position):
 		
 		add_child(new_object)
 		new_object.mass = new_object.custom_mass
+		new_object.scale = Vector2(new_object.custom_scale, new_object.custom_scale)
+		new_object.set_color(new_object.custom_color)
 		new_object.freeze = true
 		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
 		print("Объект создан в позиции: ", position, "МАССА", new_object.mass)
 
 func select_object(object):
 	deselect_object()
-	
-	
 	selected_object = object
+	print("Выделен объект, его custom_scale =", object.custom_scale)
 	selected_object.select_object()
+	
+	Mass_SpinBox.set_block_signals(true)
+	Scale_SpinBox.set_block_signals(true)
+	Color_picedbuton_object.set_block_signals(true)
+	
 	Mass_SpinBox.value = object.custom_mass
+	Scale_SpinBox.value = object.custom_scale
+	Color_picedbuton_object.color = object.custom_color
+	
+	Mass_SpinBox.set_block_signals(false)
+	Scale_SpinBox.set_block_signals(false)
+	Color_picedbuton_object.set_block_signals(false)
+	
 	print("Объект выделен")
 	right_tabs.current_tab = 1 #обьекты
 
@@ -167,7 +193,18 @@ func deselect_object():
 		selected_object.deselect_object()
 	selected_object = null
 	right_tabs.current_tab = 0 #мир
+	
+	Mass_SpinBox.set_block_signals(true)
+	Scale_SpinBox.set_block_signals(true)
+	Color_picedbuton_object.set_block_signals(true)
+	
 	Mass_SpinBox.value = 0
+	Scale_SpinBox.value = 0
+	Color_picedbuton_object.color = Color.WHITE
+	
+	Mass_SpinBox.set_block_signals(false)
+	Scale_SpinBox.set_block_signals(false)
+	Color_picedbuton_object.set_block_signals(false)
 
 func object_clicked(object):
 	select_object(object)
@@ -251,6 +288,13 @@ func start_simulation():
 		if child is RigidBody2D and not child.is_static:
 			child.freeze = false
 			child.mass = child.custom_mass
+			#child.scale = Vector2(child.custom_scale, child.custom_scale)
+			# Синхронизируем дочерние визуальные узлы с родительским scale
+			for visual_child in child.get_children():
+				if visual_child is Polygon2D or visual_child is Sprite2D:
+					visual_child.scale = Vector2(child.custom_scale, child.custom_scale)
+			print("После применения scale =", child.scale)
+			child.set_color(child.custom_color)
 	state = "PLAY"
 
 func stop_simulation():
@@ -292,6 +336,7 @@ func on_gravity_pressed(value):
 	for child in get_children():
 		if child is RigidBody2D:
 			child.gravity_scale = 1 if value else 0
+
 func on_edit_pressed():
 	if state == "PAUSE":
 		stop_simulation() #PAUSE→EDIT
@@ -301,11 +346,29 @@ func on_edit_pressed():
 func on_speed_changed(value):
 	Engine.time_scale = value 
 
-func on_mass_chaged(value):
+func on_mass_changed(value):
 	if selected_object is RigidBody2D:
 		selected_object.custom_mass = value
+		print("🟡 on_mass_changed сработал! value =", value)
 		if state == "PAUSE" or state == "EDIT":
 			selected_object.mass = value
+
+func on_scale_changed(value):
+	if selected_object:
+		selected_object.custom_scale = value
+		print("Scale изменён: custom_scale =", selected_object.custom_scale)
+		print("🔴 on_scale_changed сработал! value =", value)
+		if state == "PAUSE" or state == "EDIT":
+			selected_object.scale = Vector2(value, value)
+
+func on_color_object_chanded(new_color):
+	if selected_object:
+		selected_object.custom_color = new_color
+		print("🔵 on_color сработал! color =", new_color)
+		if state == "PAUSE" or state == "EDIT":
+			selected_object.set_color(new_color)
+
+
 # /// ТАБЛИЦА СОСТОЯНИЙ ///
 func can_edit():
 	return state == "EDIT" or state == "PAUSE"

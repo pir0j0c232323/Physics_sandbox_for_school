@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://bkkggwhx3aixk" path="res://main.gd" id="1_h2yge"]
 [ext_resource type="Theme" uid="uid://kuicygtlifr3" path="res://ui_theme.tres" id="1_ig7tw"]
 [ext_resource type="Script" uid="uid://fl1wt1h16g4t" path="res://v_box_container.gd" id="2_0xm2m"]
+[ext_resource type="Script" uid="uid://ca6bl1ouijnjy" path="res://camera_2d.gd" id="4_1bvp3"]
+[ext_resource type="PackedScene" path="res://addons/infinite_grid/infinite_grid_2d.tscn" id="5_lquwl"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ig7tw"]
 bg_color = Color(0.21176471, 0.21176471, 0.21176471, 0)
@@ -36,6 +38,11 @@ distance = -5.0
 
 [node name="Main" type="Node2D" unique_id=2017057063]
 script = ExtResource("1_h2yge")
+
+[node name="GRID_LAYER" type="CanvasLayer" parent="." unique_id=1316985762]
+layer = -1
+
+[node name="InfiniteGrid2D" parent="GRID_LAYER" unique_id=1955672855 instance=ExtResource("5_lquwl")]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=812513102]
 
@@ -218,3 +225,6 @@ position = Vector2(500, 540)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=107825967]
 shape = SubResource("WorldBoundaryShape2D_1n5va")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1472970013]
+script = ExtResource("4_1bvp3")

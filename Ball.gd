@@ -16,6 +16,8 @@ func _on_input_event(viewport, event, shape_idx) -> void:
 func update_size():
 	$Sprite2D.scale = Vector2(custom_scale, custom_scale)
 	$CollisionShape2D.scale = Vector2(custom_scale, custom_scale)
+	if selection_outline:
+		selection_outline.scale = Vector2($Sprite2D.scale.x * 1.25, $Sprite2D.scale.y * 1.25)
 	
 func select_object():
 	if is_selected:
@@ -50,4 +52,14 @@ func deselect_object():
 func set_color(color):
 	orig_color = color
 	$Sprite2D.modulate = color
+	
+func _ready() -> void:
+	orig_color = custom_color
+	$Sprite2D.modulate = orig_color
+	mass = custom_mass 
+	
+	update_size()
+	
+	if is_static:
+		freeze = true
 	

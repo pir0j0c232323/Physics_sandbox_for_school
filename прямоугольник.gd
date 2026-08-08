@@ -12,6 +12,8 @@ var orig_color
 func update_size():
 	$Polygon2D.scale = Vector2(custom_scale, custom_scale)
 	$CollisionShape2D.scale = Vector2(custom_scale, custom_scale)
+	if selection_outline:
+		selection_outline.scale = Vector2($Polygon2D.scale.x * 1.25, $Polygon2D.scale.y * 1.25)
 
 func _ready() -> void:
 	$Polygon2D.color = Color(1,1,1,1)

@@ -12,8 +12,11 @@ var orig_color
 func update_size():
 	$Polygon2D.scale = Vector2(custom_scale, custom_scale)
 	$CollisionPolygon2D.scale = Vector2(custom_scale, custom_scale)
+	if selection_outline:
+		selection_outline.scale = Vector2($Polygon2D.scale.x * 1.25, $Polygon2D.scale.y * 1.25)
 
 func _ready() -> void:
+	orig_color = custom_color
 	$Polygon2D.color = orig_color
 func _on_input_event(viewport, event, shape_idx) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -54,3 +57,4 @@ func deselect_object():
 func set_color(color):
 	orig_color = color
 	$Polygon2D.modulate = color
+		

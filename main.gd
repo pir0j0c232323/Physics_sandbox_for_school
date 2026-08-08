@@ -102,9 +102,9 @@ func _physics_process(delta: float) -> void:
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		grabbed_object.global_position = world_pos + grab_offset
 		
-	for child in get_children():
-		if child is RigidBody2D:
-			print("Кадр | name=", child.name, " scale=", child.scale)
+	#for child in get_children():
+		#if child is RigidBody2D:
+			#print("Кадр | name=", child.name, " scale=", child.scale)
 
 # === ОБРАБОТКА КЛИКОВ ПО МИРУ ===
 func _unhandled_input(event: InputEvent):
@@ -155,9 +155,9 @@ func create_object(type, position):
 		new_object.position = position
 		
 		# Случайный цвет
-		var random_color = Color(randf(), randf(), randf(), 1)
-		if new_object.has_method("set_color"):
-			new_object.set_color(random_color)
+		#var random_color = Color(randf(), randf(), randf(), 1)
+		#if new_object.has_method("set_color"):
+			#new_object.set_color(random_color)
 		
 		add_child(new_object)
 		new_object.mass = new_object.custom_mass
@@ -248,7 +248,8 @@ func stop_grab():
 	if is_dragging == true and grabbed_object != null and is_instance_valid(grabbed_object):
 		grabbed_object.collision_layer = original_layer
 		grabbed_object.collision_mask = original_mask
-		if state == "EDIT":
+		if state == "EDIT" or state == "PAUSE":
+			
 			selected_object.freeze = true
 		else:
 			grabbed_object.freeze = false

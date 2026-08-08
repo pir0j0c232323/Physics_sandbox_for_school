@@ -131,10 +131,13 @@ func handle_left_click():
 	var space_state = get_world_2d().direct_space_state
 	var result = space_state.intersect_point(query)
 	
-	# Если ничего нет — создаём объект
+	# Если ничего нет — проверяем нет ли выделение если есть снимаем, если нет создаём обьект
 	if not can_edit(): return
 	elif result.size() == 0:
-		create_object(number_selected_object, world_pos)
+		if selected_object != null:
+			deselect_object()
+		else:
+			create_object(number_selected_object, world_pos)
 	else:
 		# Если кликнули на объект — выделяем его
 		var clicked_object = result[0].collider

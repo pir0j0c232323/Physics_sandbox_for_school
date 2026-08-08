@@ -35,13 +35,15 @@ func _outline_add() -> float:
 
 func refresh_outline():
 	if selection_outline == null:
-		print("RECT: обводка ещё не создана!")
 		return
-	var add = _outline_add()
+	var base_size: float = _base_size()
+	var obj_size: float = base_size * $Polygon2D.scale.x
+	var width: float = min(OUTLINE_WIDTH, obj_size / 4.0)
+	var add: float = (2.0 * width) / base_size
 	selection_outline.scale = Vector2($Polygon2D.scale.x + add, $Polygon2D.scale.y + add)
 	if DEBUG_OUTLINE:
 		selection_outline.modulate = Color(1, 1, 0)
-		print("RECT base=", _base_size(), " add=", add, " scale=", $Polygon2D.scale)
+		#print("RECT base=", _base_size(), " add=", add, " scale=", $Polygon2D.scale)
 
 func update_size():
 	$Polygon2D.scale = Vector2(custom_scale, custom_scale)

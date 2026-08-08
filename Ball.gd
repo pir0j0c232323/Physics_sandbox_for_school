@@ -26,7 +26,9 @@ func refresh_outline():
 		return
 	
 	var base_size: float = $Sprite2D.texture.get_size().x
-	var add: float = (2.0 * OUTLINE_WIDTH) / base_size
+	var obj_size: float = base_size * $Sprite2D.scale.x  
+	var width: float = min(OUTLINE_WIDTH, obj_size / 4.0) 
+	var add: float = (2.0 * width) / base_size
 	selection_outline.scale = Vector2($Sprite2D.scale.x + add, $Sprite2D.scale.y + add)
 	
 	if DEBUG_OUTLINE:

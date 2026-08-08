@@ -163,6 +163,7 @@ func create_object(type, position):
 		new_object.mass = new_object.custom_mass
 		#new_object.scale = Vector2(new_object.custom_scale, new_object.custom_scale)
 		new_object.set_color(new_object.custom_color)
+		new_object.update_size()
 		new_object.freeze = true
 		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
 		print("Объект создан в позиции: ", position, "МАССА", new_object.mass)

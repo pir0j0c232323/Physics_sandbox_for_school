@@ -5,56 +5,83 @@ extends RigidBody2D
 @export var custom_color = Color.WHITE
 @export var custom_scale = 1.0
 
+const OUTLINE_WIDTH = 4.0
+const DEBUG_OUTLINE = true
+
 var is_selected = false
 var selection_outline = null
 var orig_color
 
-func update_size():
-	$Polygon2D.scale = Vector2(custom_scale, custom_scale)
-	$CollisionPolygon2D.scale = Vector2(custom_scale, custom_scale)
-	if selection_outline:
-		selection_outline.scale = Vector2($Polygon2D.scale.x * 1.25, $Polygon2D.scale.y * 1.25)
-
 func _ready() -> void:
 	orig_color = custom_color
-	$Polygon2D.color = orig_color
+	$Polygon2D.modulate = orig_color
+
 func _on_input_event(viewport, event, shape_idx) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		get_parent().object_clicked(self)
+
+func _base_size() -> float:
+	var min_x: float = INF
+	var max_x: float = -INF
+	for p in $Polygon2D.polygon:
+		if p.x < min_x:
+			min_x = p.x
+		if p.x > max_x:
+			max_x = p.x
+	return max_x - min_x
+
+func _outline_add() -> float:
+	return (2.0 * OUTLINE_WIDTH) / _base_size()
+
+func refresh_outline():
+	if selection_outline == null:
+		print("RECT: обводка ещё не создана!")
+		return
+	var add = _outline_add()
+	selection_outline.scale = Vector2($Polygon2D.scale.x + add, $Polygon2D.scale.y + add)
+	if DEBUG_OUTLINE:
+		selection_outline.modulate = Color(1, 1, 0)
+		print("RECT base=", _base_size(), " add=", add, " scale=", $Polygon2D.scale)
+
+func update_size():
+	$Polygon2D.scale = Vector2(custom_scale, custom_scale)
+	# Ищем collision-ноду под любым именем — больше никаких крашей
+	var col = get_node_or_null("CollisionShape2D")
+	if col == null:
+		col = get_node_or_null("CollisionPolygon2D")
+	if col != null:
+		col.scale = Vector2(custom_scale, custom_scale)
+	refresh_outline()
 
 func select_object():
 	if is_selected:
 		return
 	is_selected = true
-	
-	var prizrac = $Polygon2D
+
+	# 1. Прозрачность
 	var temp_color = orig_color
 	temp_color.a = 0.85
-	prizrac.modulate = temp_color  #полупрозрачный
-	
+	$Polygon2D.modulate = temp_color
+
+	# 2. Обводка
 	var outline = Polygon2D.new()
 	outline.polygon = $Polygon2D.polygon
-	outline.modulate = Color(0,0,0,1)
 	outline.position = Vector2(0, 0)
-	outline.scale = Vector2($Polygon2D.scale.x * 1.25,$Polygon2D.scale.y * 1.25)
 	outline.name = "SelectionOutline"
-	
-	
 	add_child(outline)
 	move_child(outline, 0)
-	
 	selection_outline = outline
 
+	# 3. Пересчёт в конце
+	refresh_outline()
+
 func deselect_object():
-		is_selected = false
-		
-		$Polygon2D.modulate = Color(1,1,1,1)
-		
-		if selection_outline:
-			selection_outline.queue_free()
-			selection_outline = null
+	is_selected = false
+	$Polygon2D.modulate = orig_color
+	if selection_outline:
+		selection_outline.queue_free()
+		selection_outline = null
 
 func set_color(color):
 	orig_color = color
 	$Polygon2D.modulate = color
-		

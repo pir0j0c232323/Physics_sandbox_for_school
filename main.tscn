@@ -36,6 +36,11 @@ cache/0/16/0/scale = 1.0
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_1n5va"]
 distance = -5.0
 
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_pkuri"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dmjyp"]
+size = Vector2(669, 20)
+
 [node name="Main" type="Node2D" unique_id=2017057063]
 script = ExtResource("1_h2yge")
 
@@ -228,3 +233,10 @@ shape = SubResource("WorldBoundaryShape2D_1n5va")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1472970013]
 script = ExtResource("4_1bvp3")
+
+[node name="StaticBody2D2" type="StaticBody2D" parent="." unique_id=1380829833]
+physics_material_override = SubResource("PhysicsMaterial_pkuri")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D2" unique_id=44527761]
+position = Vector2(572.5, 545)
+shape = SubResource("RectangleShape2D_dmjyp")

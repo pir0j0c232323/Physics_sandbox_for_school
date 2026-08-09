@@ -182,7 +182,7 @@ layout_mode = 2
 
 [node name="TabContainer" type="TabContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel" unique_id=238483611]
 layout_mode = 2
-current_tab = 1
+current_tab = 2
 
 [node name="World" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=1314560991]
 visible = false
@@ -194,9 +194,26 @@ layout_mode = 2
 theme_override_fonts/font = SubResource("FontFile_1n5va")
 text = "ГРАВИТАЦИЯ ВЫКЛ"
 
-[node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
+[node name="Связь" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=952074620]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 1
+
+[node name="Link_CheckBox" type="CheckButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=690341948]
+layout_mode = 2
+text = "Режим связи"
+
+[node name="Sharnir_Button" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1616501501]
+layout_mode = 2
+text = "Шарнир"
+
+[node name="Pruzina_Button2" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=527579753]
+layout_mode = 2
+text = "Пружина"
+
+[node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
+layout_mode = 2
+metadata/_tab_index = 2
 
 [node name="Label" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=257089073]
 layout_mode = 2
@@ -224,6 +241,10 @@ text = "ЦВЕТ"
 
 [node name="ColorPickerButton" type="ColorPickerButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=972767928]
 layout_mode = 2
+
+[node name="Static_CheckBox" type="CheckBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1463751267]
+layout_mode = 2
+text = "Обьект статичен"
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1415401202]
 position = Vector2(500, 540)

@@ -6,6 +6,7 @@ var new_rectangle = preload("res://прямоугольник.tscn")
 var new_triangle = preload("res://треугольник.tscn")
 
 # Текущий выбранный тип объекта
+var links_array = []
 var number_selected_object = 0
 var selected_object = null
 var grabbed_object = null
@@ -15,7 +16,14 @@ var original_layer = 1
 var original_mask = 1
 var state = "EDIT"
 
+# === ИНСТРУМЕНТ СВЯЗИ ===
+var link_button_group = ButtonGroup.new()
+var is_link_mode = false
+var link_node_a = null
+var current_link_type = 0 # 0 - Шарнир (PinJoint2D), 1 - Пружина (DampedSpringJoint2D)
+
 # UI элементы
+@onready var link_checkbox =$"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Link_CheckBox"
 @onready var menu_button: MenuButton = $CanvasLayer/VBoxContainer/HBoxContainer/MenuButton
 @onready var mechanics_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel
 @onready var molecular_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MolecularPanel
@@ -32,6 +40,9 @@ var state = "EDIT"
 # Кнопки параметра мира
 @onready var gravity_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World/GRAVITY
 # Кнопки параметра обьектов
+@onready var sharnir_button = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Sharnir_Button"
+@onready var pruzina_button = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Pruzina_Button2"
+@onready var Static_CheckBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Static_CheckBox
 @onready var Mass_SpinBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/SpinBox
 @onready var Scale_SpinBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Scale_SpinBox
 @onready var Color_picedbuton_object = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/ColorPickerButton
@@ -42,6 +53,11 @@ func _ready():
 	menu_button.text = "☰"
 	print("Слайдер: ", speed_slider)
 	
+	if sharnir_button and pruzina_button:
+		sharnir_button.toggle_mode = true
+		pruzina_button.toggle_mode = true
+		sharnir_button.button_group = link_button_group
+		pruzina_button.button_group = link_button_group
 
 	# === ПОДКЛЮЧЕНИЕ КНОПОК  ===
 	if circle_button:
@@ -63,13 +79,17 @@ func _ready():
 	if gravity_button:
 		gravity_button.toggled.connect(on_gravity_pressed)
 	# кнопки панели обьектов
+	if Static_CheckBox:
+		Static_CheckBox.toggled.connect(on_static_toggled)
 	if Mass_SpinBox:
 		Mass_SpinBox.value_changed.connect(on_mass_changed)
 	if Scale_SpinBox:
 		Scale_SpinBox.value_changed.connect(on_scale_changed)
 	if Color_picedbuton_object:
 		Color_picedbuton_object.color_changed.connect(on_color_object_chanded)
-	
+	#кнопки панели связь
+	if link_checkbox:
+		link_checkbox.toggled.connect(on_link_checkbox_toggled)
 	
 	# Показываем механику по умолчанию
 	_show_panel(0)
@@ -101,6 +121,14 @@ func _physics_process(delta: float) -> void:
 	var world_pos = get_global_mouse_position()
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		grabbed_object.global_position = world_pos + grab_offset
+	for link in links_array:
+		if is_instance_valid(link["a"]) and is_instance_valid(link["b"]) and is_instance_valid(link["line"]):
+			link["line"].points[0] = link["a"].global_position
+			link["line"].points[1] = link["b"].global_position
+		else:
+			# Если какой-то из объектов удалили — удаляем и саму связь с линией, чтобы не было ошибок
+			if is_instance_valid(link["joint"]): link["joint"].queue_free()
+			if is_instance_valid(link["line"]): link["line"].queue_free()
 		
 	#for child in get_children():
 		#if child is RigidBody2D:
@@ -120,7 +148,11 @@ func _unhandled_input(event: InputEvent):
 	if event.is_action_pressed("delete_selected"):
 		delete_selected_object()
 	if event.is_action_pressed("ui_cancel"):
-		deselect_object()
+		if is_link_mode:
+			cancel_link_mode()
+			is_link_mode = false # Выходим из режима связи
+		else:
+			deselect_object()
 
 func handle_left_click():
 	var world_pos = get_global_mouse_position()
@@ -133,6 +165,17 @@ func handle_left_click():
 	
 	# Если ничего нет — проверяем нет ли выделение если есть снимаем, если нет создаём обьект
 	if not can_edit(): return
+	# === ЛОГИКА СВЯЗЕЙ ===
+	if is_link_mode:
+		if result.size() > 0:
+			var clicked_object = result[0].collider
+			if clicked_object is RigidBody2D:
+				process_link_click(clicked_object)
+		else:
+			# Кликнули в пустоту — сбрасываем выделение
+			cancel_link_mode()
+		return # Выходим из функции, чтобы не спавнить и не тащить объекты!
+	# =====================
 	elif result.size() == 0:
 		if selected_object != null:
 			deselect_object()
@@ -180,14 +223,17 @@ func select_object(object):
 	Mass_SpinBox.set_block_signals(true)
 	Scale_SpinBox.set_block_signals(true)
 	Color_picedbuton_object.set_block_signals(true)
+	Static_CheckBox.set_block_signals(true)
 	
 	Mass_SpinBox.value = object.custom_mass
 	Scale_SpinBox.value = object.custom_scale
 	Color_picedbuton_object.color = object.custom_color
+	Static_CheckBox.button_pressed = object.is_static
 	
 	Mass_SpinBox.set_block_signals(false)
 	Scale_SpinBox.set_block_signals(false)
 	Color_picedbuton_object.set_block_signals(false)
+	Static_CheckBox.set_block_signals(false)
 	
 	print("Объект выделен")
 	right_tabs.current_tab = 1 #обьекты
@@ -201,14 +247,17 @@ func deselect_object():
 	Mass_SpinBox.set_block_signals(true)
 	Scale_SpinBox.set_block_signals(true)
 	Color_picedbuton_object.set_block_signals(true)
+	Static_CheckBox.set_block_signals(true)
 	
 	Mass_SpinBox.value = 0
 	Scale_SpinBox.value = 0
 	Color_picedbuton_object.color = Color.WHITE
+	Static_CheckBox.button_pressed = false
 	
 	Mass_SpinBox.set_block_signals(false)
 	Scale_SpinBox.set_block_signals(false)
 	Color_picedbuton_object.set_block_signals(false)
+	Static_CheckBox.set_block_signals(false)
 
 func object_clicked(object):
 	select_object(object)
@@ -252,13 +301,16 @@ func stop_grab():
 	if is_dragging == true and grabbed_object != null and is_instance_valid(grabbed_object):
 		grabbed_object.collision_layer = original_layer
 		grabbed_object.collision_mask = original_mask
-		if state == "EDIT" or state == "PAUSE":
-			
-			selected_object.freeze = true
+		
+		# Если это пауза/редакт ИЛИ объект сам по себе статичный — морозим
+		if state == "EDIT" or state == "PAUSE" or grabbed_object.is_static:
+			grabbed_object.freeze = true
 		else:
 			grabbed_object.freeze = false
+			
 		grabbed_object.linear_velocity = Vector2.ZERO
 		grabbed_object.angular_velocity = 0
+		
 	is_dragging = false
 	grabbed_object = null
 
@@ -293,11 +345,6 @@ func start_simulation():
 		if child is RigidBody2D and not child.is_static:
 			child.freeze = false
 			child.mass = child.custom_mass
-			#child.scale = Vector2(child.custom_scale, child.custom_scale)
-			# Синхронизируем дочерние визуальные узлы с родительским scale
-			#for visual_child in child.get_children():
-				#if visual_child is Polygon2D or visual_child is Sprite2D:
-				#	visual_child.scale = Vector2(child.custom_scale, child.custom_scale)
 			print("После применения scale =", child.scale)
 			child.set_color(child.custom_color)
 	state = "PLAY"
@@ -318,7 +365,8 @@ func pause_simulation():
 
 func resume_simulation():
 	for child in get_children():
-		if child is RigidBody2D:
+		# Размораживаем только если это RigidBody2D И он НЕ статичный
+		if child is RigidBody2D and not child.is_static:
 			child.freeze = false
 
 func on_play_pause_pressed():
@@ -372,7 +420,93 @@ func on_color_object_chanded(new_color):
 		if state == "PAUSE" or state == "EDIT":
 			selected_object.set_color(new_color)
 
+func on_static_toggled(toggled_on: bool):
+	if selected_object:
+		selected_object.set_static(toggled_on)
+		print("Статика объекта изменена на: ", toggled_on)
+		# Если игра идет (PLAY) — замораживаем или размораживаем на ходу
+		if state == "PLAY":
+			selected_object.freeze = toggled_on
+		# Если ПАУЗА или РЕДАКТ — объект В ЛЮБОМ СЛУЧАЕ должен оставаться замороженным
+		else:
+			selected_object.freeze = true
 
 # /// ТАБЛИЦА СОСТОЯНИЙ ///
 func can_edit():
 	return state == "EDIT" or state == "PAUSE"
+
+# СВЯЗЬ 
+func process_link_click(object):
+	if link_node_a == null:
+		# ПЕРВЫЙ КЛИК: запоминаем объект
+		link_node_a = object
+		print("🔗 Точка А выбрана: ", object.name)
+		object.select_object() 
+	else:
+		# ВТОРОЙ КЛИК: проверяем, что это другой объект
+		if object != link_node_a:
+			print("🔗 Создаем связь между: ", link_node_a.name, " и ", object.name)
+			create_joint(link_node_a, object)
+			
+			link_node_a.deselect_object()
+			link_node_a = null # Сбрасываем для следующей пары
+		else:
+			print("⚠️ Нельзя соединить объект с самим собой!")
+			cancel_link_mode()
+
+func create_joint(object_a, object_b):
+	# 1. Создаем физический джойнт в зависимости от выбранного типа
+	var joint
+	if current_link_type == 0:
+		joint = PinJoint2D.new()
+		print("🔗 Создан Шарнир (PinJoint2D)")
+	else:
+		joint = DampedSpringJoint2D.new()
+		joint.length = object_a.global_position.distance_to(object_b.global_position)
+		joint.stiffness = 20.0 
+		joint.damping = 1.0
+		print("🔗 Создана Пружина/Верёвка (DampedSpringJoint2D)")
+	
+	# 2. Устанавливаем позиции и пути к телам
+	joint.global_position = (object_a.global_position + object_b.global_position) / 2
+	joint.node_a = joint.get_path_to(object_a)
+	joint.node_b = joint.get_path_to(object_b)
+	
+	# 3. Создаем визуальную линию (Line2D) с маленькой буквы 'l'
+	var line = Line2D.new()
+	line.width = 4.0
+	line.default_color = Color.YELLOW if current_link_type == 0 else Color.CYAN
+	line.add_point(Vector2.ZERO)
+	line.add_point(Vector2.ZERO)
+	
+	# Добавляем в дерево сцены
+	add_child(joint)
+	add_child(line) # Важно: с маленькой буквы line!
+	
+	# Сохраняем для обновления в _physics_process
+	links_array.append({
+		"joint": joint,
+		"line": line,
+		"a": object_a,
+		"b": object_b
+	})
+
+
+
+func cancel_link_mode():
+	if link_node_a != null:
+		link_node_a.deselect_object()
+		link_node_a = null
+	print("❌ Режим связи сброшен")
+	
+func on_link_checkbox_toggled(toggled_on: bool):
+	is_link_mode = toggled_on
+	if is_link_mode:
+		print("🔗 Режим связи ВКЛЮЧЕН")
+		# Если был выбран какой-то объект для спавна, можно сбросить, 
+		# но главное — если была выбрана точка А, сбрасывать не обязательно, 
+		# хотя лучше сбросить при входе в режим:
+		cancel_link_mode()
+	else:
+		print("❌ Режим связи ВЫКЛЮЧЕН")
+		cancel_link_mode()

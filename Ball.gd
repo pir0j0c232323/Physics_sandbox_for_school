@@ -12,6 +12,7 @@ const DEBUG_OUTLINE = true
 var is_selected = false
 var selection_outline = null
 var orig_color
+var orig_texture
 
 func _on_input_event(viewport, event, shape_idx) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -32,7 +33,10 @@ func refresh_outline():
 	selection_outline.scale = Vector2($Sprite2D.scale.x + add, $Sprite2D.scale.y + add)
 	
 	if DEBUG_OUTLINE:
-		selection_outline.modulate = Color(1, 1, 0)  # неоновый жёлтый
+		if is_static:
+			selection_outline.modulate = Color.RED # Если статичный - красная обводка
+		else:
+			selection_outline.modulate = Color(1, 1, 0) # Если обычный - желтая обводка
 		var real_border = (selection_outline.scale.x - $Sprite2D.scale.x) * base_size / 2.0
 		print("base=", base_size, " | add=", real_border, "px должно быть ", OUTLINE_WIDTH)
 
@@ -72,13 +76,22 @@ func deselect_object():
 
 func set_color(color):
 	orig_color = color
+	custom_color = color
 	$Sprite2D.modulate = color
 
 func _ready() -> void:
 	orig_color = custom_color
+	orig_texture = $Sprite2D.texture
 	$Sprite2D.modulate = orig_color
 	mass = custom_mass 
 	update_size()
 	
+	
+
+
+func set_static(value: bool):
+	is_static = value
+	refresh_outline()
+
 	if is_static:
 		freeze = true

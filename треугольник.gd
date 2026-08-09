@@ -15,7 +15,14 @@ var orig_color
 func _ready() -> void:
 	orig_color = custom_color
 	$Polygon2D.modulate = orig_color
+	
+	
 
+
+func set_static(value: bool):
+	is_static = value
+	refresh_outline()
+	
 func _on_input_event(viewport, event, shape_idx) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		get_parent().object_clicked(self)
@@ -40,8 +47,11 @@ func refresh_outline():
 	var add = _outline_add()
 	selection_outline.scale = Vector2($Polygon2D.scale.x + add, $Polygon2D.scale.y + add)
 	if DEBUG_OUTLINE:
-		selection_outline.modulate = Color(1, 1, 0)
-		print("RECT base=", _base_size(), " add=", add, " scale=", $Polygon2D.scale)
+		if is_static:
+			selection_outline.modulate = Color.RED # Если статичный - красная обводка
+		else:
+			selection_outline.modulate = Color(1, 1, 0) # Если обычный - желтая обводка
+		#print("RECT base=", _base_size(), " add=", add, " scale=", $Polygon2D.scale)
 
 func update_size():
 	$Polygon2D.scale = Vector2(custom_scale, custom_scale)
@@ -84,4 +94,6 @@ func deselect_object():
 
 func set_color(color):
 	orig_color = color
+	custom_color = color
 	$Polygon2D.modulate = color
+	

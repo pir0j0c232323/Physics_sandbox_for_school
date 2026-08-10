@@ -199,25 +199,38 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="Link_CheckBox" type="CheckButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=690341948]
-layout_mode = 2
-text = "Режим связи"
-
-[node name="Sharnir_Button" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1616501501]
-layout_mode = 2
-text = "Шарнир"
-
 [node name="Pruzina_Button2" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=527579753]
 layout_mode = 2
 text = "Пружина"
 
+[node name="Nit_Button" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1953248087]
+layout_mode = 2
+text = "Нить
+"
+
+[node name="Жесткость пружины" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=257089073]
+layout_mode = 2
+text = "жесткость пружины
+"
+
+[node name="Stiffness_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1171224215]
+layout_mode = 2
+
+[node name="Длинна" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1557039765]
+layout_mode = 2
+text = "длина
+"
+
+[node name="Length_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1762810039]
+layout_mode = 2
+
+[node name="AutoLength_CheckBox" type="CheckBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1804582893]
+layout_mode = 2
+text = "Auto"
+
 [node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
 layout_mode = 2
 metadata/_tab_index = 2
-
-[node name="Label" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=257089073]
-layout_mode = 2
-text = "МАССА"
 
 [node name="SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=862498572]
 layout_mode = 2

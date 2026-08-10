@@ -6,7 +6,7 @@ var new_rectangle = preload("res://прямоугольник.tscn")
 var new_triangle = preload("res://треугольник.tscn")
 
 # Текущий выбранный тип объекта
-var links_array = []
+var selected_link = null
 var number_selected_object = 0
 var selected_object = null
 var grabbed_object = null
@@ -16,31 +16,36 @@ var original_layer = 1
 var original_mask = 1
 var state = "EDIT"
 
-# === ИНСТРУМЕНТ СВЯЗИ ===
-var link_button_group = ButtonGroup.new()
-var is_link_mode = false
-var link_node_a = null
-var current_link_type = 0 # 0 - Шарнир (PinJoint2D), 1 - Пружина (DampedSpringJoint2D)
+# Выделение и связи
+var selected_objects = [] # Список всех выделенных объектов (через Shift)
+var links_array = []      # Массив созданных связей и линий
 
 # UI элементы
-@onready var link_checkbox =$"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Link_CheckBox"
 @onready var menu_button: MenuButton = $CanvasLayer/VBoxContainer/HBoxContainer/MenuButton
 @onready var mechanics_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel
 @onready var molecular_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MolecularPanel
 @onready var electricity_panel = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/ElectricityPanel
 @onready var right_tabs = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer
+
 # Кнопки механики
 @onready var circle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/CircleButton
 @onready var rectangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/RectangleButton
 @onready var triangle_button = $CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/TriangleButton
+
 # Кнопки старт\пауза\редакт\скорость
 @onready var play_pause_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/Play_Pause_Button
-@onready var edit_button =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/edit_button
-@onready var speed_slider =$CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/HSlider
+@onready var edit_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/edit_button
+@onready var speed_slider = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/VSplitContainer/BottomPanel/MarginContainer/HBoxContainer/HSlider
+
 # Кнопки параметра мира
 @onready var gravity_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World/GRAVITY
-# Кнопки параметра обьектов
-@onready var sharnir_button = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Sharnir_Button"
+
+# Кнопки параметра объектов и связей
+@onready var length_spin = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Length_SpinBox"
+@onready var stiffness_spin =$"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Stiffness_SpinBox"
+@onready var auto_length_check = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/AutoLength_CheckBox"
+@onready var nit_button = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Nit_Button"
+
 @onready var pruzina_button = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Pruzina_Button2"
 @onready var Static_CheckBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Static_CheckBox
 @onready var Mass_SpinBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/SpinBox
@@ -53,13 +58,10 @@ func _ready():
 	menu_button.text = "☰"
 	print("Слайдер: ", speed_slider)
 	
-	if sharnir_button and pruzina_button:
-		sharnir_button.toggle_mode = true
-		pruzina_button.toggle_mode = true
-		sharnir_button.button_group = link_button_group
-		pruzina_button.button_group = link_button_group
-
-	# === ПОДКЛЮЧЕНИЕ КНОПОК  ===
+	length_spin.value_changed.connect(func(_val): update_selected_link())
+	stiffness_spin.value_changed.connect(func(_val): update_selected_link())
+	
+	# === ПОДКЛЮЧЕНИЕ КНОПОК ===
 	if circle_button:
 		circle_button.pressed.connect(_on_circle_pressed)
 	if rectangle_button:
@@ -75,10 +77,12 @@ func _ready():
 		edit_button.text = "🔧"
 	if speed_slider:
 		speed_slider.value_changed.connect(on_speed_changed)
+		
 	# кнопки панели мира
 	if gravity_button:
 		gravity_button.toggled.connect(on_gravity_pressed)
-	# кнопки панели обьектов
+		
+	# кнопки панели объектов
 	if Static_CheckBox:
 		Static_CheckBox.toggled.connect(on_static_toggled)
 	if Mass_SpinBox:
@@ -87,13 +91,19 @@ func _ready():
 		Scale_SpinBox.value_changed.connect(on_scale_changed)
 	if Color_picedbuton_object:
 		Color_picedbuton_object.color_changed.connect(on_color_object_chanded)
-	#кнопки панели связь
-	if link_checkbox:
-		link_checkbox.toggled.connect(on_link_checkbox_toggled)
+		
+	# кнопки панели связей
+	if nit_button:
+		nit_button.pressed.connect(_on_nit_button_pressed)
 	
-	# Показываем механику по умолчанию
+	if pruzina_button:
+		pruzina_button.pressed.connect(_on_pruzina_button_pressed)
+	
 	_show_panel(0)
 	update_ui()
+
+func can_edit() -> bool:
+	return state != "PLAY"
 
 func _on_menu_selected(id):
 	_show_panel(id)
@@ -103,7 +113,7 @@ func _show_panel(index):
 	molecular_panel.visible = (index == 1)
 	electricity_panel.visible = (index == 2)
 
-# === ОБРАБОТЧИКИ КНОПОК ===
+# === ОБРАБОТЧИКИ КНОПОК ФИГУР ===
 func _on_circle_pressed():
 	number_selected_object = 0
 	print("Выбран: Круг")
@@ -116,110 +126,138 @@ func _on_triangle_pressed():
 	number_selected_object = 2
 	print("Выбран: Треугольник")
 
-# === ФИЗИЧЕСКОЕ ДВИЖЕНИЕ ===
+# === ФИЗИЧЕСКОЕ ДВИЖЕНИЕ И ОБНОВЛЕНИЕ СВЯЗЕЙ ===
 func _physics_process(delta: float) -> void:
 	var world_pos = get_global_mouse_position()
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		grabbed_object.global_position = world_pos + grab_offset
+		
+	# Динамически обновляем концы нити/шарнира за каждым объектом
 	for link in links_array:
 		if is_instance_valid(link["a"]) and is_instance_valid(link["b"]) and is_instance_valid(link["line"]):
-			link["line"].points[0] = link["a"].global_position
-			link["line"].points[1] = link["b"].global_position
+			var pos_a = link["a"].global_position
+			var pos_b = link["b"].global_position
+			
+			# Если это пружина — рисуем зигзаг, если нить — обычную прямую линию
+			if link.get("is_spring", false):
+				update_spring_line(link["line"], pos_a, pos_b)
+			else:
+				link["line"].set_point_position(0, pos_a)
+				link["line"].set_point_position(1, pos_b)
 		else:
-			# Если какой-то из объектов удалили — удаляем и саму связь с линией, чтобы не было ошибок
 			if is_instance_valid(link["joint"]): link["joint"].queue_free()
 			if is_instance_valid(link["line"]): link["line"].queue_free()
-		
-	#for child in get_children():
-		#if child is RigidBody2D:
-			#print("Кадр | name=", child.name, " scale=", child.scale)
+			if is_instance_valid(link.get("area")): link["area"].queue_free()
 
 # === ОБРАБОТКА КЛИКОВ ПО МИРУ ===
-func _unhandled_input(event: InputEvent):
-	# Левый клик мыши
+func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		handle_left_click()
-	#отпускание левой кнопки мышки
+		var mouse_pos = get_global_mouse_position()
+		
+		# 1. СНАЧАЛА проверяем, не кликнули ли мы по физическому объекту
+		var query = PhysicsPointQueryParameters2D.new()
+		query.position = mouse_pos
+		var space_state = get_world_2d().direct_space_state
+		var result = space_state.intersect_point(query)
+		
+		if result.size() > 0:
+			var clicked_object = result[0].collider
+			if clicked_object is RigidBody2D:
+				# Если кликнули по объекту — сбрасываем выделение связи и выделяем объект
+				deselect_link()
+				
+				if Input.is_key_pressed(KEY_SHIFT):
+					if clicked_object in selected_objects:
+						deselect_single_object(clicked_object)
+					else:
+						add_to_selection(clicked_object)
+				else:
+					deselect_all_objects()
+					add_to_selection(clicked_object)
+					start_grab(clicked_object)
+				return # Прерываем клик, чтобы он не ушел на линии
+		
+		# 2. ЕСЛИ ПОД КУРСОРОМ НЕТ ОБЪЕКТА — проверяем, не кликнули ли по линии связи
+		var found_link = false
+		for link in links_array:
+			if is_instance_valid(link["a"]) and is_instance_valid(link["b"]):
+				var dist = Geometry2D.get_closest_point_to_segment_uncapped(mouse_pos, link["a"].global_position, link["b"].global_position).distance_to(mouse_pos)
+				if dist < 10.0:
+					select_link(link)
+					found_link = true
+					break
+		
+		# 3. Если не кликнули ни туда, ни сюда — сбрасываем всё и спавним новый объект
+		if not found_link:
+			deselect_link()
+			deselect_all_objects()
+			create_object(number_selected_object, mouse_pos)
+			
 	elif event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		stop_grab()
-	# Удаление объектов
+		
 	if event.is_action_pressed("delete_all"):
 		delete_all_objects()
 	if event.is_action_pressed("delete_selected"):
 		delete_selected_object()
-	if event.is_action_pressed("ui_cancel"):
-		if is_link_mode:
-			cancel_link_mode()
-			is_link_mode = false # Выходим из режима связи
-		else:
-			deselect_object()
-
 func handle_left_click():
-	var world_pos = get_global_mouse_position()
+	if not can_edit(): return
 	
-	# Проверяем что под курсором
+	var world_pos = get_global_mouse_position()
 	var query = PhysicsPointQueryParameters2D.new()
 	query.position = world_pos
 	var space_state = get_world_2d().direct_space_state
 	var result = space_state.intersect_point(query)
 	
-	# Если ничего нет — проверяем нет ли выделение если есть снимаем, если нет создаём обьект
-	if not can_edit(): return
-	# === ЛОГИКА СВЯЗЕЙ ===
-	if is_link_mode:
-		if result.size() > 0:
-			var clicked_object = result[0].collider
-			if clicked_object is RigidBody2D:
-				process_link_click(clicked_object)
-		else:
-			# Кликнули в пустоту — сбрасываем выделение
-			cancel_link_mode()
-		return # Выходим из функции, чтобы не спавнить и не тащить объекты!
-	# =====================
-	elif result.size() == 0:
-		if selected_object != null:
-			deselect_object()
-		else:
-			create_object(number_selected_object, world_pos)
-	else:
-		# Если кликнули на объект — выделяем его
+	if result.size() > 0:
 		var clicked_object = result[0].collider
 		if clicked_object is RigidBody2D:
-			select_object(clicked_object)
-			start_grab(clicked_object)
-
-func create_object(type, position):
-	if not can_edit(): return
-	var scene
-	match type:
-		0: scene = new_ball
-		1: scene = new_rectangle
-		2: scene = new_triangle
-	
-	if scene:
-		var new_object = scene.instantiate()
-		new_object.position = position
+			# Множественный выбор через Shift
+			if Input.is_key_pressed(KEY_SHIFT):
+				if clicked_object in selected_objects:
+					deselect_single_object(clicked_object)
+				else:
+					add_to_selection(clicked_object)
+			else:
+				# Если кликнули без Shift — выделяем только один объект и можем его тащить
+				deselect_all_objects()
+				add_to_selection(clicked_object)
+				start_grab(clicked_object)
+	else:
+		# Клик в пустоту — сбрасываем выделение и спавним объект
+		deselect_all_objects()
+		create_object(number_selected_object, world_pos)
 		
-		# Случайный цвет
-		#var random_color = Color(randf(), randf(), randf(), 1)
-		#if new_object.has_method("set_color"):
-			#new_object.set_color(random_color)
-		
-		add_child(new_object)
-		new_object.mass = new_object.custom_mass
-		#new_object.scale = Vector2(new_object.custom_scale, new_object.custom_scale)
-		new_object.set_color(new_object.custom_color)
-		new_object.update_size()
-		new_object.freeze = true
-		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
-		print("Объект создан в позиции: ", position, "МАССА", new_object.mass)
 
-func select_object(object):
-	deselect_object()
-	selected_object = object
-	print("Выделен объект, его custom_scale =", object.custom_scale)
-	selected_object.select_object()
-	
+
+# === ЛОГИКА ВЫДЕЛЕНИЯ ===
+func add_to_selection(object):
+	if not object in selected_objects:
+		selected_objects.append(object)
+		object.select_object()
+		
+		# Синхронизируем инспектор с последним выделенным объектом
+		selected_object = object
+		sync_inspector_ui(object)
+		right_tabs.current_tab = 1 # Вкладка "Объект"
+
+func deselect_single_object(object):
+	if object in selected_objects:
+		object.deselect_object()
+		selected_objects.erase(object)
+		if selected_object == object:
+			selected_object = selected_objects.back() if selected_objects.size() > 0 else null
+
+func deselect_all_objects():
+	for obj in selected_objects:
+		if is_instance_valid(obj):
+			obj.deselect_object()
+	selected_objects.clear()
+	selected_object = null
+	reset_inspector_ui()
+	right_tabs.current_tab = 0 # Вкладка "Мир"
+
+func sync_inspector_ui(object):
 	Mass_SpinBox.set_block_signals(true)
 	Scale_SpinBox.set_block_signals(true)
 	Color_picedbuton_object.set_block_signals(true)
@@ -234,16 +272,8 @@ func select_object(object):
 	Scale_SpinBox.set_block_signals(false)
 	Color_picedbuton_object.set_block_signals(false)
 	Static_CheckBox.set_block_signals(false)
-	
-	print("Объект выделен")
-	right_tabs.current_tab = 1 #обьекты
 
-func deselect_object():
-	if selected_object != null and is_instance_valid(selected_object):
-		selected_object.deselect_object()
-	selected_object = null
-	right_tabs.current_tab = 0 #мир
-	
+func reset_inspector_ui():
 	Mass_SpinBox.set_block_signals(true)
 	Scale_SpinBox.set_block_signals(true)
 	Color_picedbuton_object.set_block_signals(true)
@@ -259,29 +289,131 @@ func deselect_object():
 	Color_picedbuton_object.set_block_signals(false)
 	Static_CheckBox.set_block_signals(false)
 
-func object_clicked(object):
-	select_object(object)
+# === СОЗДАНИЕ ОБЪЕКТОВ И СВЯЗЕЙ ===
+func create_object(type, position):
+	if not can_edit(): return
+	var scene
+	match type:
+		0: scene = new_ball
+		1: scene = new_rectangle
+		2: scene = new_triangle
+	
+	if scene:
+		var new_object = scene.instantiate()
+		new_object.position = position
+		add_child(new_object)
+		new_object.mass = new_object.custom_mass
+		new_object.set_color(new_object.custom_color)
+		new_object.update_size()
+		new_object.freeze = true
+		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
+		print("Объект создан в позиции: ", position)
 
-func ball_clicked(object):
-	select_object(object)
 
+
+func _on_pruzina_button_pressed():
+	try_create_connection(1) # 1 - Пружина
+	
+func _on_nit_button_pressed():
+	try_create_connection(2) # 2 - Нить
+
+func try_create_connection(link_type: int):
+	if selected_objects.size() < 2:
+		print("⚠️ Выделите как минимум 2 объекта (зажав Shift)!")
+		return
+	
+	# Соединяем объекты из списка последовательно (цепочкой)
+	for i in range(selected_objects.size() - 1):
+		create_joint(selected_objects[i], selected_objects[i + 1], link_type)
+
+func create_joint(object_a, object_b, link_type):
+	var joint = DampedSpringJoint2D.new()
+	var line = Line2D.new()
+	
+	# Создаем Area2D и коллизию для возможности кликать по линии мышкой
+	var area = Area2D.new()
+	var collision = CollisionShape2D.new()
+	var shape = SegmentShape2D.new()
+	
+	# Настройка визуальной линии
+	line.width = 3.0
+	line.z_index = 10 # Отрисовываем поверх объектов
+	line.add_point(Vector2.ZERO)
+	line.add_point(Vector2.ZERO)
+	
+	# Настройка формы коллизии по текущим позициям объектов
+	shape.a = object_a.global_position
+	shape.b = object_b.global_position
+	collision.shape = shape
+	area.add_child(collision)
+	
+	# Добавляем элементы на сцену
+	add_child(line)
+	add_child(area)
+	
+	# Вычисляем длину: автоматически или из SpinBox
+	var dist = object_a.global_position.distance_to(object_b.global_position)
+	var final_length = dist
+	
+	if not auto_length_check.button_pressed and length_spin:
+		final_length = length_spin.value
+	
+	# Настройки физики джойнта
+	joint.global_position = object_a.global_position
+	joint.length = final_length
+	joint.rest_length = final_length
+	
+	if link_type == 1:
+		# 1: ПРУЖИНА (Мягкая, берем жесткость из SpinBox)
+		joint.stiffness = stiffness_spin.value if stiffness_spin else 10.0
+		joint.damping = 0.01
+		line.default_color = Color.CYAN
+		print("🔗 Создана Пружина. Длина: ", final_length, ", жесткость: ", joint.stiffness)
+		
+	elif link_type == 2:
+		# 2: НИТЬ / ВЕРЁВКА (Жесткая)
+		joint.stiffness = 64.0
+		joint.damping = 2.0
+		line.default_color = Color.WHITE
+		print("🔗 Создана Нить. Длина: ", final_length)
+
+	add_child(joint)
+
+	# Указываем пути к телам ТОЛЬКО ПОСЛЕ add_child
+	joint.node_a = object_a.get_path()
+	joint.node_b = object_b.get_path()
+
+	# Сохраняем всё в общий массив связей
+	links_array.append({
+		"joint": joint,
+		"line": line,
+		"area": area,
+		"a": object_a,
+		"b": object_b,
+		"is_spring": (link_type == 1) # true для пружины, false для нити
+	})
+
+# === УДАЛЕНИЕ И ПЕРЕТАСКИВАНИЕ ===
 func delete_all_objects():
 	is_dragging = false
 	grabbed_object = null
 	for child in get_children():
 		if child is RigidBody2D:
 			child.queue_free()
-	selected_object = null
+	deselect_all_objects()
 	print("Все объекты удалены!")
 
 func delete_selected_object():
-	if selected_object != null:
-		if selected_object == grabbed_object:
-			is_dragging = false
-			grabbed_object = null
-		selected_object.queue_free()
-		selected_object = null
-		print("Объект удалён!")
+	for obj in selected_objects:
+		if is_instance_valid(obj):
+			if obj == grabbed_object:
+				is_dragging = false
+				grabbed_object = null
+			obj.queue_free()
+	selected_objects.clear()
+	selected_object = null
+	reset_inspector_ui()
+	print("Выделенные объекты удалены!")
 
 func start_grab(object):
 	if not can_edit(): return
@@ -289,10 +421,8 @@ func start_grab(object):
 		grabbed_object = object
 		grab_offset = object.global_position - get_global_mouse_position()
 		grabbed_object.freeze = true
-		#исходная колизия
 		original_layer = grabbed_object.collision_layer
 		original_mask = grabbed_object.collision_mask
-		#призрак
 		grabbed_object.collision_layer = 0
 		grabbed_object.collision_mask = 0
 		is_dragging = true
@@ -302,7 +432,6 @@ func stop_grab():
 		grabbed_object.collision_layer = original_layer
 		grabbed_object.collision_mask = original_mask
 		
-		# Если это пауза/редакт ИЛИ объект сам по себе статичный — морозим
 		if state == "EDIT" or state == "PAUSE" or grabbed_object.is_static:
 			grabbed_object.freeze = true
 		else:
@@ -314,30 +443,27 @@ func stop_grab():
 	is_dragging = false
 	grabbed_object = null
 
-# /// Отрисовщик кнопок на ui ///
+# === ИНТЕРФЕЙС И СИМУЛЯЦИИ ===
 func update_ui():
 	if state == "PLAY":
 		play_pause_button.text = "⏸️"
-		play_pause_button.add_theme_color_override("font_color",Color.YELLOW)
-		
+		play_pause_button.add_theme_color_override("font_color", Color.YELLOW)
 		edit_button.disabled = true
 		edit_button.text = "❌"
-		edit_button.add_theme_color_override("font_color",Color.WEB_GRAY)
+		edit_button.add_theme_color_override("font_color", Color.WEB_GRAY)
 	elif state == "PAUSE":
 		play_pause_button.text = "▶️"
-		play_pause_button.add_theme_color_override("font_color",Color.LIME_GREEN)
-		
+		play_pause_button.add_theme_color_override("font_color", Color.LIME_GREEN)
 		edit_button.disabled = false
 		edit_button.text = "🔧"
-		edit_button.add_theme_color_override("font_color",Color.WHITE)
+		edit_button.add_theme_color_override("font_color", Color.WHITE)
 	else:
 		play_pause_button.text = "▶️"
-		play_pause_button.add_theme_color_override("font_color",Color.BLUE)
-		
+		play_pause_button.add_theme_color_override("font_color", Color.BLUE)
 		edit_button.disabled = true
 		edit_button.text = "❌"
-		edit_button.add_theme_color_override("font_color",Color.WEB_GRAY)
-# /// СИМУЛЯЦИИ /// 
+		edit_button.add_theme_color_override("font_color", Color.WEB_GRAY)
+
 func start_simulation():
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		stop_grab()
@@ -345,7 +471,6 @@ func start_simulation():
 		if child is RigidBody2D and not child.is_static:
 			child.freeze = false
 			child.mass = child.custom_mass
-			print("После применения scale =", child.scale)
 			child.set_color(child.custom_color)
 	state = "PLAY"
 
@@ -360,24 +485,23 @@ func stop_simulation():
 func pause_simulation():
 	for child in get_children():
 		if child is RigidBody2D:
-			child.freeze = true # НЕ обнуляем скорости!
-			state = "PAUSE"    
+			child.freeze = true
+	state = "PAUSE"
 
 func resume_simulation():
 	for child in get_children():
-		# Размораживаем только если это RigidBody2D И он НЕ статичный
 		if child is RigidBody2D and not child.is_static:
 			child.freeze = false
 
 func on_play_pause_pressed():
 	if state == "EDIT":
-		start_simulation() #EDIT→PLAY
+		start_simulation()
 		state = "PLAY"
 	elif state == "PLAY":
-		pause_simulation() #PLAY→PAUSE
+		pause_simulation()
 		state = "PAUSE"
 	else: 
-		resume_simulation() #PAUSE→PLAY
+		resume_simulation()
 		state = "PLAY"
 	update_ui()
 
@@ -392,7 +516,7 @@ func on_gravity_pressed(value):
 
 func on_edit_pressed():
 	if state == "PAUSE":
-		stop_simulation() #PAUSE→EDIT
+		stop_simulation()
 		state = "EDIT"
 		update_ui()
 
@@ -402,111 +526,84 @@ func on_speed_changed(value):
 func on_mass_changed(value):
 	if selected_object is RigidBody2D:
 		selected_object.custom_mass = value
-		print("🟡 on_mass_changed сработал! value =", value)
 		if state == "PAUSE" or state == "EDIT":
 			selected_object.mass = value
 
 func on_scale_changed(value):
 	if selected_object:
 		selected_object.custom_scale = value
-		print("Scale изменён: custom_scale =", selected_object.custom_scale)
 		if selected_object.has_method("update_size"):
 			selected_object.update_size()
 
 func on_color_object_chanded(new_color):
 	if selected_object:
 		selected_object.custom_color = new_color
-		print("🔵 on_color сработал! color =", new_color)
 		if state == "PAUSE" or state == "EDIT":
 			selected_object.set_color(new_color)
 
 func on_static_toggled(toggled_on: bool):
 	if selected_object:
 		selected_object.set_static(toggled_on)
-		print("Статика объекта изменена на: ", toggled_on)
-		# Если игра идет (PLAY) — замораживаем или размораживаем на ходу
 		if state == "PLAY":
 			selected_object.freeze = toggled_on
-		# Если ПАУЗА или РЕДАКТ — объект В ЛЮБОМ СЛУЧАЕ должен оставаться замороженным
 		else:
 			selected_object.freeze = true
 
-# /// ТАБЛИЦА СОСТОЯНИЙ ///
-func can_edit():
-	return state == "EDIT" or state == "PAUSE"
+func update_selected_link():
+	if selected_link and is_instance_valid(selected_link["joint"]):
+		var j = selected_link["joint"]
+		
+		if not auto_length_check.button_pressed:
+			j.length = length_spin.value
+			j.rest_length = length_spin.value
+		
+		# Обновляем жесткость, только если это пружина (у пружины stiffness обычно < 60)
+		if j.stiffness < 60: 
+			j.stiffness = stiffness_spin.value
 
-# СВЯЗЬ 
-func process_link_click(object):
-	if link_node_a == null:
-		# ПЕРВЫЙ КЛИК: запоминаем объект
-		link_node_a = object
-		print("🔗 Точка А выбрана: ", object.name)
-		object.select_object() 
-	else:
-		# ВТОРОЙ КЛИК: проверяем, что это другой объект
-		if object != link_node_a:
-			print("🔗 Создаем связь между: ", link_node_a.name, " и ", object.name)
-			create_joint(link_node_a, object)
+func select_link(link):
+	deselect_link() # Сброс старого выделения
+	selected_link = link
+	link["line"].default_color = Color.RED # Подсветка выбранной связи красным
+	print("Выбрана связь")
+
+func deselect_link():
+	if selected_link and is_instance_valid(selected_link["line"]):
+		selected_link["line"].default_color = Color.WHITE # Возврат обычного цвета
+	selected_link = null
+	
+func update_spring_line(line: Line2D, a: Vector2, b: Vector2):
+	var dir = b - a
+	var length = dir.length()
+	if length < 1.0: return
+	
+	var unit_dir = dir.normalized()
+	var perp = Vector2(-unit_dir.y, unit_dir.x) # Перпендикуляр к линии связи
+	
+	var coil_width = 10.0  # Ширина (размах) витков пружины
+	var segments = 12      # Количество сегментов (должно быть чётным)
+	
+	# Если точек у линии меньше или больше нужного — пересоздаем их
+	if line.get_point_count() != segments + 1:
+		line.clear_points()
+		for i in range(segments + 1):
+			line.add_point(Vector2.ZERO)
 			
-			link_node_a.deselect_object()
-			link_node_a = null # Сбрасываем для следующей пары
-		else:
-			print("⚠️ Нельзя соединить объект с самим собой!")
-			cancel_link_mode()
-
-func create_joint(object_a, object_b):
-	# 1. Создаем физический джойнт в зависимости от выбранного типа
-	var joint
-	if current_link_type == 0:
-		joint = PinJoint2D.new()
-		print("🔗 Создан Шарнир (PinJoint2D)")
-	else:
-		joint = DampedSpringJoint2D.new()
-		joint.length = object_a.global_position.distance_to(object_b.global_position)
-		joint.stiffness = 20.0 
-		joint.damping = 1.0
-		print("🔗 Создана Пружина/Верёвка (DampedSpringJoint2D)")
+	# Начало и конец пружины жестко привязаны к объектам
+	line.set_point_position(0, a)
+	line.set_point_position(segments, b)
 	
-	# 2. Устанавливаем позиции и пути к телам
-	joint.global_position = (object_a.global_position + object_b.global_position) / 2
-	joint.node_a = joint.get_path_to(object_a)
-	joint.node_b = joint.get_path_to(object_b)
-	
-	# 3. Создаем визуальную линию (Line2D) с маленькой буквы 'l'
-	var line = Line2D.new()
-	line.width = 4.0
-	line.default_color = Color.YELLOW if current_link_type == 0 else Color.CYAN
-	line.add_point(Vector2.ZERO)
-	line.add_point(Vector2.ZERO)
-	
-	# Добавляем в дерево сцены
-	add_child(joint)
-	add_child(line) # Важно: с маленькой буквы line!
-	
-	# Сохраняем для обновления в _physics_process
-	links_array.append({
-		"joint": joint,
-		"line": line,
-		"a": object_a,
-		"b": object_b
-	})
-
-
-
-func cancel_link_mode():
-	if link_node_a != null:
-		link_node_a.deselect_object()
-		link_node_a = null
-	print("❌ Режим связи сброшен")
-	
-func on_link_checkbox_toggled(toggled_on: bool):
-	is_link_mode = toggled_on
-	if is_link_mode:
-		print("🔗 Режим связи ВКЛЮЧЕН")
-		# Если был выбран какой-то объект для спавна, можно сбросить, 
-		# но главное — если была выбрана точка А, сбрасывать не обязательно, 
-		# хотя лучше сбросить при входе в режим:
-		cancel_link_mode()
-	else:
-		print("❌ Режим связи ВЫКЛЮЧЕН")
-		cancel_link_mode()
+	# Промежуточные точки образуют зигзаг (витки)
+	for i in range(1, segments):
+		var t = float(i) / segments
+		var base_pos = a + dir * t
+		
+		# Чередуем знак, чтобы точки уходили то влево, то вправо от центральной оси
+		var sign_val = 1 if (i % 2 == 1) else -1
+		
+		# Делаем первые и последние витки чуть поуже для красоты, средние — полной ширины
+		var current_width = coil_width
+		if i == 1 or i == segments - 1:
+			current_width = coil_width * 0.5
+			
+		line.set_point_position(i, base_pos + perp * current_width * sign_val)

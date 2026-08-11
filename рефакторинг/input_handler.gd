@@ -10,12 +10,15 @@ var original_mask = 1
 @onready var spawner = $"../ObjectSpawner"
 @onready var selection = $"../SelectionManager"
 @onready var links = $"../LinkManager"
+@onready var drawer = $"../Shape_drawer"
 
 func _physics_process(_delta):
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		grabbed_object.global_position = get_parent().get_global_mouse_position() + grab_offset
 
 func _unhandled_input(event):
+	if drawer.is_active():
+		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var mouse_pos = get_parent().get_global_mouse_position()
 		
@@ -54,7 +57,10 @@ func _unhandled_input(event):
 				selection.deselect_all_objects()
 				return
 			else:
-				spawner.spawn_selected(mouse_pos)
+				drawer.draw_tool = spawner.number_selected_object
+				drawer.begin_draw(mouse_pos)
+				#spawner.spawn_selected(mouse_pos)
+
 	
 	elif event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		stop_grab()

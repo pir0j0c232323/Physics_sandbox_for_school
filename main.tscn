@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://ca1inq3gis3hy" path="res://рефакторинг/link_manager.gd" id="9_dg77c"]
 [ext_resource type="Script" uid="uid://df1jsqp6bhe7n" path="res://рефакторинг/input_handler.gd" id="10_ycdy4"]
 [ext_resource type="Script" uid="uid://oic3he3yua5m" path="res://рефакторинг/ui_controller.gd" id="11_w48qg"]
+[ext_resource type="Script" uid="uid://dg2v41pa6hi7t" path="res://shape_drawer.gd" id="12_dg77c"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ig7tw"]
 bg_color = Color(0.21176471, 0.21176471, 0.21176471, 0)
@@ -294,3 +295,6 @@ script = ExtResource("10_ycdy4")
 
 [node name="UIController" type="Node" parent="." unique_id=2047289871]
 script = ExtResource("11_w48qg")
+
+[node name="Shape_drawer" type="Node2D" parent="." unique_id=272177524]
+script = ExtResource("12_dg77c")

@@ -8,6 +8,7 @@ var new_triangle = preload("res://сцены обьектов + их скрип�
 # Какая фигура выбрана для спавна
 var number_selected_object = 0
 
+@onready var drawer = $"../Shape_drawer"
 @onready var sim = $"../SimulationController"
 @onready var circle_button = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/CircleButton
 @onready var rectangle_button = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/RectangleButton

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cwcnn6iamhx58"]
 
-[ext_resource type="Script" uid="uid://cg4lhgmvfaovr" path="res://Ball.gd" id="1_jiowd"]
+[ext_resource type="Script" uid="uid://cg4lhgmvfaovr" path="res://сцены обьектов + их скрипты/Круг.gd" id="1_qjj4o"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_qtu10"]
 friction = 0.3
@@ -17,7 +17,8 @@ radius = 9.0
 
 [node name="круг" type="RigidBody2D" unique_id=906599561]
 physics_material_override = SubResource("PhysicsMaterial_qtu10")
-script = ExtResource("1_jiowd")
+continuous_cd = 1
+script = ExtResource("1_qjj4o")
 metadata/_edit_vertical_guides_ = [18.0, -18.0]
 metadata/_edit_horizontal_guides_ = [-18.0, 18.0]
 

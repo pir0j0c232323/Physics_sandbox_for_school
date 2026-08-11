@@ -1,14 +1,15 @@
 extends Node2D
-
+123
 # Прелоады сцен
-var new_ball = preload("res://rigid_body_2d.tscn")
-var new_rectangle = preload("res://прямоугольник.tscn")
-var new_triangle = preload("res://треугольник.tscn")
+var new_ball = preload("res://сцены обьектов + их скрипты/круг.tscn")
+var new_rectangle = preload("res://сцены обьектов + их скрипты/прямоугольник.tscn")
+var new_triangle = preload("res://сцены обьектов + их скрипты/треугольник.tscn")
 
 # Текущий выбранный тип объекта
 var selected_link = null
 var number_selected_object = 0
 var selected_object = null
+var selected_link = null
 var grabbed_object = null
 var is_dragging = false
 var grab_offset
@@ -19,6 +20,7 @@ var state = "EDIT"
 # Выделение и связи
 var selected_objects = [] # Список всех выделенных объектов (через Shift)
 var links_array = []      # Массив созданных связей и линий
+var bodies_collide = true 
 
 # UI элементы
 @onready var menu_button: MenuButton = $CanvasLayer/VBoxContainer/HBoxContainer/MenuButton
@@ -40,17 +42,22 @@ var links_array = []      # Массив созданных связей и ли
 # Кнопки параметра мира
 @onready var gravity_button = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World/GRAVITY
 
-# Кнопки параметра объектов и связей
+# Кнопки параметра связей
 @onready var length_spin = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Length_SpinBox"
 @onready var stiffness_spin =$"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Stiffness_SpinBox"
 @onready var auto_length_check = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/AutoLength_CheckBox"
 @onready var nit_button = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Nit_Button"
-
 @onready var pruzina_button = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Pruzina_Button2"
 @onready var Static_CheckBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Static_CheckBox
+@onready var colision_objects = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer/collision_object"
+
+# Кнопки параметра обьекты
 @onready var Mass_SpinBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/SpinBox
 @onready var Scale_SpinBox = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Scale_SpinBox
 @onready var Color_picedbuton_object = $CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/ColorPickerButton
+
+# Побочки от кретина
+@onready var label_collision_buton = $"CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer/Длинна2"
 
 func _ready():
 	# === НАСТРОЙКА МЕНЮ ===
@@ -95,9 +102,10 @@ func _ready():
 	# кнопки панели связей
 	if nit_button:
 		nit_button.pressed.connect(_on_nit_button_pressed)
-	
 	if pruzina_button:
 		pruzina_button.pressed.connect(_on_pruzina_button_pressed)
+	if colision_objects:
+		colision_objects.toggled.connect(on_collision_object_pressed)
 	
 	_show_panel(0)
 	update_ui()
@@ -200,6 +208,7 @@ func _unhandled_input(event):
 		delete_all_objects()
 	if event.is_action_pressed("delete_selected"):
 		delete_selected_object()
+
 func handle_left_click():
 	if not can_edit(): return
 	
@@ -227,8 +236,6 @@ func handle_left_click():
 		# Клик в пустоту — сбрасываем выделение и спавним объект
 		deselect_all_objects()
 		create_object(number_selected_object, world_pos)
-		
-
 
 # === ЛОГИКА ВЫДЕЛЕНИЯ ===
 func add_to_selection(object):
@@ -289,7 +296,7 @@ func reset_inspector_ui():
 	Color_picedbuton_object.set_block_signals(false)
 	Static_CheckBox.set_block_signals(false)
 
-# === СОЗДАНИЕ ОБЪЕКТОВ И СВЯЗЕЙ ===
+# === СОЗДАНИЕ ОБЪЕКТОВ ===
 func create_object(type, position):
 	if not can_edit(): return
 	var scene
@@ -309,13 +316,20 @@ func create_object(type, position):
 		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
 		print("Объект создан в позиции: ", position)
 
-
-
+# === СОЗДАНИЕ СВЯЗЕЙ ===
 func _on_pruzina_button_pressed():
 	try_create_connection(1) # 1 - Пружина
-	
+
 func _on_nit_button_pressed():
 	try_create_connection(2) # 2 - Нить
+
+func on_collision_object_pressed(value):
+	bodies_collide = value
+	if value == true:
+		label_collision_buton.text = "КОЛЛИЗИЯ ТЕЛ ВКЛ"
+	else:
+		label_collision_buton.text = "КОЛЛИЗИЯ ТЕЛ ВЫКЛ"
+	print("колайдерс = ", bodies_collide)
 
 func try_create_connection(link_type: int):
 	if selected_objects.size() < 2:
@@ -367,13 +381,17 @@ func create_joint(object_a, object_b, link_type):
 		# 1: ПРУЖИНА (Мягкая, берем жесткость из SpinBox)
 		joint.stiffness = stiffness_spin.value if stiffness_spin else 10.0
 		joint.damping = 0.01
+		joint.disable_collision = not bodies_collide
 		line.default_color = Color.CYAN
 		print("🔗 Создана Пружина. Длина: ", final_length, ", жесткость: ", joint.stiffness)
+		
+		
 		
 	elif link_type == 2:
 		# 2: НИТЬ / ВЕРЁВКА (Жесткая)
 		joint.stiffness = 64.0
 		joint.damping = 2.0
+		joint.disable_collision = not bodies_collide
 		line.default_color = Color.WHITE
 		print("🔗 Создана Нить. Длина: ", final_length)
 
@@ -390,7 +408,8 @@ func create_joint(object_a, object_b, link_type):
 		"area": area,
 		"a": object_a,
 		"b": object_b,
-		"is_spring": (link_type == 1) # true для пружины, false для нити
+		"is_spring": (link_type == 1), # true для пружины, false для нити
+		"collide": bodies_collide
 	})
 
 # === УДАЛЕНИЕ И ПЕРЕТАСКИВАНИЕ ===
@@ -571,7 +590,7 @@ func deselect_link():
 	if selected_link and is_instance_valid(selected_link["line"]):
 		selected_link["line"].default_color = Color.WHITE # Возврат обычного цвета
 	selected_link = null
-	
+
 func update_spring_line(line: Line2D, a: Vector2, b: Vector2):
 	var dir = b - a
 	var length = dir.length()

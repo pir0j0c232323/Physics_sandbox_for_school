@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dvnlh0db8pnik"]
 
-[ext_resource type="Script" uid="uid://bt3xxc51bl3fn" path="res://прямоугольник.gd" id="1_qdn3c"]
+[ext_resource type="Script" uid="uid://bt2uifiv7ilq7" path="res://сцены обьектов + их скрипты/прямоугольник.gd" id="1_6hws2"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1n5va"]
 
@@ -9,7 +9,8 @@
 [node name="прямоугольник" type="RigidBody2D" unique_id=569392882]
 disable_mode = 2
 physics_material_override = SubResource("PhysicsMaterial_1n5va")
-script = ExtResource("1_qdn3c")
+continuous_cd = 1
+script = ExtResource("1_6hws2")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=234233752]
 shape = SubResource("RectangleShape2D_1n5va")

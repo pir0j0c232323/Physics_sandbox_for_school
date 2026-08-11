@@ -36,11 +36,6 @@ cache/0/16/0/scale = 1.0
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_1n5va"]
 distance = -5.0
 
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_pkuri"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_dmjyp"]
-size = Vector2(669, 20)
-
 [node name="Main" type="Node2D" unique_id=2017057063]
 script = ExtResource("1_h2yge")
 
@@ -194,43 +189,10 @@ layout_mode = 2
 theme_override_fonts/font = SubResource("FontFile_1n5va")
 text = "ГРАВИТАЦИЯ ВЫКЛ"
 
-[node name="Связь" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=952074620]
+[node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
-
-[node name="Pruzina_Button2" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=527579753]
-layout_mode = 2
-text = "Пружина"
-
-[node name="Nit_Button" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1953248087]
-layout_mode = 2
-text = "Нить
-"
-
-[node name="Жесткость пружины" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=257089073]
-layout_mode = 2
-text = "жесткость пружины
-"
-
-[node name="Stiffness_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1171224215]
-layout_mode = 2
-
-[node name="Длинна" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1557039765]
-layout_mode = 2
-text = "длина
-"
-
-[node name="Length_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1762810039]
-layout_mode = 2
-
-[node name="AutoLength_CheckBox" type="CheckBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1804582893]
-layout_mode = 2
-text = "Auto"
-
-[node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
-layout_mode = 2
-metadata/_tab_index = 2
 
 [node name="SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=862498572]
 layout_mode = 2
@@ -259,6 +221,48 @@ layout_mode = 2
 layout_mode = 2
 text = "Обьект статичен"
 
+[node name="Связь" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=952074620]
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="Pruzina_Button2" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=527579753]
+layout_mode = 2
+text = "Пружина"
+
+[node name="Nit_Button" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1953248087]
+layout_mode = 2
+text = "Нить
+"
+
+[node name="Жесткость пружины" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=257089073]
+layout_mode = 2
+text = "ЖЁСТКОСТЬ ПРУЖИНЫ"
+
+[node name="Stiffness_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1171224215]
+layout_mode = 2
+
+[node name="Длинна" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1557039765]
+layout_mode = 2
+text = "ДЛИНА"
+
+[node name="Length_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1762810039]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=180672709]
+layout_mode = 2
+
+[node name="Длинна2" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer" unique_id=206735970]
+layout_mode = 2
+text = "КОЛЛИЗИЯ ТЕЛ"
+
+[node name="collision_object" type="CheckButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer" unique_id=1786466984]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AutoLength_CheckBox" type="CheckBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1804582893]
+layout_mode = 2
+text = "Auto"
+
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1415401202]
 position = Vector2(500, 540)
 
@@ -267,10 +271,3 @@ shape = SubResource("WorldBoundaryShape2D_1n5va")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1472970013]
 script = ExtResource("4_1bvp3")
-
-[node name="StaticBody2D2" type="StaticBody2D" parent="." unique_id=1380829833]
-physics_material_override = SubResource("PhysicsMaterial_pkuri")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D2" unique_id=44527761]
-position = Vector2(572.5, 545)
-shape = SubResource("RectangleShape2D_dmjyp")

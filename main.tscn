@@ -177,10 +177,9 @@ layout_mode = 2
 
 [node name="TabContainer" type="TabContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel" unique_id=238483611]
 layout_mode = 2
-current_tab = 2
+current_tab = 0
 
 [node name="World" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=1314560991]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -222,6 +221,7 @@ layout_mode = 2
 text = "Обьект статичен"
 
 [node name="Связь" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=952074620]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
@@ -253,7 +253,6 @@ layout_mode = 2
 
 [node name="Длинна2" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer" unique_id=206735970]
 layout_mode = 2
-text = "КОЛЛИЗИЯ ТЕЛ"
 
 [node name="collision_object" type="CheckButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer" unique_id=1786466984]
 layout_mode = 2

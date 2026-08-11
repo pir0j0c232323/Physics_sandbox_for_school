@@ -595,6 +595,7 @@ func select_link(link):
 	colision_objects.set_block_signals(true)
 	colision_objects.button_pressed = link["collide"]
 	colision_objects.set_block_signals(false)
+	update_collision_label(link["collide"])
 	print("Выбрана связь")
 
 func deselect_link():
@@ -603,6 +604,7 @@ func deselect_link():
 		colision_objects.set_block_signals(true)
 	colision_objects.button_pressed = bodies_collide
 	colision_objects.set_block_signals(false)
+	update_collision_label(bodies_collide)
 	selected_link = null
 
 func update_spring_line(line: Line2D, a: Vector2, b: Vector2):

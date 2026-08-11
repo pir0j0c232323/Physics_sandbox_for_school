@@ -13,7 +13,6 @@ config_version=5
 config/name="Physics_sadbox-try2"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
 
 [display]
 

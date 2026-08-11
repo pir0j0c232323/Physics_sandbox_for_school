@@ -1,12 +1,11 @@
 extends Node2D
-123
+
 # Прелоады сцен
 var new_ball = preload("res://сцены обьектов + их скрипты/круг.tscn")
 var new_rectangle = preload("res://сцены обьектов + их скрипты/прямоугольник.tscn")
 var new_triangle = preload("res://сцены обьектов + их скрипты/треугольник.tscn")
 
-# Текущий выбранный тип объекта
-var selected_link = null
+# ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 var number_selected_object = 0
 var selected_object = null
 var selected_link = null
@@ -197,9 +196,12 @@ func _unhandled_input(event):
 		
 		# 3. Если не кликнули ни туда, ни сюда — сбрасываем всё и спавним новый объект
 		if not found_link:
-			deselect_link()
-			deselect_all_objects()
-			create_object(number_selected_object, mouse_pos)
+			if selected_link != null or selected_objects.size() != 0:
+				deselect_link()
+				deselect_all_objects()
+				return
+			else:
+				create_object(number_selected_object, mouse_pos)
 			
 	elif event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		stop_grab()
@@ -324,12 +326,12 @@ func _on_nit_button_pressed():
 	try_create_connection(2) # 2 - Нить
 
 func on_collision_object_pressed(value):
-	bodies_collide = value
-	if value == true:
-		label_collision_buton.text = "КОЛЛИЗИЯ ТЕЛ ВКЛ"
+	if selected_link != null:
+		selected_link["collide"] = value
+		selected_link["joint"].disable_collision = not value
 	else:
-		label_collision_buton.text = "КОЛЛИЗИЯ ТЕЛ ВЫКЛ"
-	print("колайдерс = ", bodies_collide)
+		bodies_collide = value
+	update_collision_label(value)
 
 func try_create_connection(link_type: int):
 	if selected_objects.size() < 2:
@@ -483,6 +485,12 @@ func update_ui():
 		edit_button.text = "❌"
 		edit_button.add_theme_color_override("font_color", Color.WEB_GRAY)
 
+func update_collision_label(value):
+	if value == true:
+		colision_objects.text = "КОЛЛИЗИЯ ВКЛ"
+	else:
+		colision_objects.text = "КОЛЛИЗИЯ ВЫКЛ"
+
 func start_simulation():
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		stop_grab()
@@ -584,11 +592,17 @@ func select_link(link):
 	deselect_link() # Сброс старого выделения
 	selected_link = link
 	link["line"].default_color = Color.RED # Подсветка выбранной связи красным
+	colision_objects.set_block_signals(true)
+	colision_objects.button_pressed = link["collide"]
+	colision_objects.set_block_signals(false)
 	print("Выбрана связь")
 
 func deselect_link():
 	if selected_link and is_instance_valid(selected_link["line"]):
 		selected_link["line"].default_color = Color.WHITE # Возврат обычного цвета
+		colision_objects.set_block_signals(true)
+	colision_objects.button_pressed = bodies_collide
+	colision_objects.set_block_signals(false)
 	selected_link = null
 
 func update_spring_line(line: Line2D, a: Vector2, b: Vector2):

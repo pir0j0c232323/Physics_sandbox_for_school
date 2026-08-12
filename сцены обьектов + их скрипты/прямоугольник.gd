@@ -106,7 +106,7 @@ func set_color(color):
 	custom_color = color
 	$Polygon2D.modulate = color
 
-func  set_size_px(w, h):
+func set_size_px(w, h):
 	var s: Vector2
 	s.x = w/ _base_size()
 	s.y = h/ _base_height()
@@ -117,3 +117,6 @@ func  set_size_px(w, h):
 	if col != null:
 		col.scale = Vector2(s.x, s.y)
 	refresh_outline()
+
+func get_size_px():
+	return Vector2(_base_size() * $Polygon2D.scale.x, _base_height() * $Polygon2D.scale.y)

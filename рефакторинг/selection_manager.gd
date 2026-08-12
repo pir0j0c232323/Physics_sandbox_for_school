@@ -10,6 +10,9 @@ var selected_object = null
 @onready var Scale_SpinBox = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Scale_SpinBox
 @onready var Color_picedbuton_object = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/ColorPickerButton
 @onready var Static_CheckBox = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Static_CheckBox
+@onready var Height_SpinBox = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Height_SpinBox"
+@onready var Height_Label =$"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Label5"
+@onready var Size_Label = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Label2"
 
 func _ready():
 	if Mass_SpinBox:
@@ -20,6 +23,8 @@ func _ready():
 		Color_picedbuton_object.color_changed.connect(on_color_object_chanded)
 	if Static_CheckBox:
 		Static_CheckBox.toggled.connect(on_static_toggled)
+	if Height_SpinBox:
+		Height_SpinBox.value_changed.connect(on_height_changed)
 
 func add_to_selection(object):
 	if not object in selected_objects:
@@ -52,10 +57,24 @@ func sync_inspector_ui(object):
 	Static_CheckBox.set_block_signals(true)
 	
 	Mass_SpinBox.value = object.custom_mass
-	if object.has_method("get_size_px"): 
-		Scale_SpinBox.value = object.get_size_px()
-	else:
+	if object.has_method("get_size_px"):
+		var size = object.get_size_px()
+		if size is Vector2:                      # прямоугольник
+			Scale_SpinBox.value = size.x
+			Height_SpinBox.value = size.y
+			Height_SpinBox.visible = true
+			Height_Label.visible = true
+			Size_Label.text = "ШИРИНА (W)"
+		else:                                     # круг
+			Scale_SpinBox.value = size
+			Height_SpinBox.visible = false
+			Height_Label.visible = false
+			Size_Label.text = "РАДИУС"
+	else:                                         # треугольник и прочие
 		Scale_SpinBox.value = object.custom_scale
+		Height_SpinBox.visible = false
+		Height_Label.visible = false
+		Size_Label.text = "РАЗМЕР"
 	Color_picedbuton_object.color = object.custom_color
 	Static_CheckBox.button_pressed = object.is_static
 	
@@ -87,13 +106,25 @@ func on_mass_changed(value):
 			selected_object.mass = value
 
 func on_scale_changed(value):
-	if selected_object:
-		if selected_object.has_method("set_size_px"):
-			selected_object.set_size_px(value)       # панель дала пиксели → объект меняет размер
+	if not selected_object:
+		return
+	if selected_object.has_method("set_size_px"):
+		if selected_object.has_method("get_size_px") and selected_object.get_size_px() is Vector2:
+			var s = selected_object.get_size_px()
+			selected_object.set_size_px(value, s.y)
 		else:
-			selected_object.custom_scale = value     # старый способ
-			if selected_object.has_method("update_size"):
-				selected_object.update_size()
+			selected_object.set_size_px(value)
+	else:
+		selected_object.custom_scale = value
+		if selected_object.has_method("update_size"):
+			selected_object.update_size()
+
+func on_height_changed(value):
+	if not selected_object:
+		return
+	if selected_object.has_method("get_size_px") and selected_object.get_size_px() is Vector2:
+		var s = selected_object.get_size_px()
+		selected_object.set_size_px(s.x, value)
 
 func on_color_object_chanded(new_color):
 	if selected_object:

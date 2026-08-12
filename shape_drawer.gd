@@ -74,6 +74,10 @@ func cancel():
 func confirm():
 	if draw_tool == 0:
 		var distance = first_point.distance_to(current_point)
+		if distance<0.01:
+			print("⚠️ Слишком маленький - пропускаю")
+			state = State.IDLE
+			return
 		var obj = spawner.create_circle(first_point, distance)
 		selection.add_to_selection(obj)
 		print("✅ СОЗДАТЬ: tool=", draw_tool, " p1=", first_point, " p2=", current_point)
@@ -81,7 +85,7 @@ func confirm():
 		var W = abs(current_point.x - first_point.x)
 		var H = abs(current_point.y - first_point.y)
 		if W < 5 or H < 5:
-			print("⚠️ Слишком маленький прямоугольник, пропускаю")
+			print("⚠️ Слишком маленький - пропускаю")
 			state = State.IDLE
 			return
 		var obj = spawner.create_rectangle(first_point, current_point)

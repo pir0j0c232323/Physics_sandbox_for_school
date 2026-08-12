@@ -20,6 +20,7 @@ var fourth_point_of_object
 var is_adjusting = false
 
 @onready var spawner = $"../ObjectSpawner"
+@onready var selection = $"../SelectionManager"
 
 func is_active() -> bool:
 	return state != State.IDLE
@@ -71,8 +72,12 @@ func cancel():
 	print("❌ Чертёж отменён")
 
 func confirm():
+	var distance = first_point.distance_to(current_point)
+	var obj = spawner.create_circle(first_point, distance)
+	selection.add_to_selection(obj)
 	print("✅ СОЗДАТЬ: tool=", draw_tool, " p1=", first_point, " p2=", current_point)
 	state = State.IDLE
+	
 
 #func draw_punktir_for_object():
 	#while  t < radius:

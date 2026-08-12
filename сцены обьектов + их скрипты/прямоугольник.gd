@@ -15,14 +15,11 @@ var orig_color
 func _ready() -> void:
 	orig_color = custom_color
 	$Polygon2D.modulate = orig_color
-	
-	
-
 
 func set_static(value: bool):
 	is_static = value
 	refresh_outline()
-	
+
 func _on_input_event(viewport, event, shape_idx) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		get_parent().object_clicked(self)

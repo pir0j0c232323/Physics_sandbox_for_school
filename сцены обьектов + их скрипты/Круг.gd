@@ -14,6 +14,13 @@ var selection_outline = null
 var orig_color
 var orig_texture
 
+func _ready() -> void:
+	orig_color = custom_color
+	orig_texture = $Sprite2D.texture
+	$Sprite2D.modulate = orig_color
+	mass = custom_mass 
+	update_size()
+
 func _on_input_event(viewport, event, shape_idx) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		get_parent().ball_clicked(self)
@@ -45,6 +52,18 @@ func update_size():
 	$Sprite2D.scale = Vector2(s, s)
 	$CollisionShape2D.scale = Vector2(s, s)
 	refresh_outline()
+
+func get_base_radius():
+	var base_radius = $Sprite2D.texture.get_size().x / 2.0 * BASE_SCALE
+	return base_radius
+
+func get_size_px():
+	var base_radius_in_pixels = custom_scale * get_base_radius()
+	return base_radius_in_pixels
+
+func set_size_px(v):
+	custom_scale = v / get_base_radius()
+	update_size()
 
 func select_object():
 	if is_selected:
@@ -78,16 +97,6 @@ func set_color(color):
 	orig_color = color
 	custom_color = color
 	$Sprite2D.modulate = color
-
-func _ready() -> void:
-	orig_color = custom_color
-	orig_texture = $Sprite2D.texture
-	$Sprite2D.modulate = orig_color
-	mass = custom_mass 
-	update_size()
-	
-	
-
 
 func set_static(value: bool):
 	is_static = value

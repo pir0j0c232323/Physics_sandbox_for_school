@@ -58,3 +58,18 @@ func create_object(type, position):
 		new_object.freeze = true
 		new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
 		print("Объект создан в позиции: ", position)
+
+func create_circle(center, radius):
+	if not sim.can_edit():
+		return
+	var new_object = new_ball.instantiate()
+	new_object.position = center
+	get_parent().add_child(new_object)  
+	new_object.mass = new_object.custom_mass
+	new_object.set_color(new_object.custom_color)
+	new_object.custom_scale = radius/25.6
+	new_object.update_size()
+	new_object.freeze = true
+	new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
+	print("Объект создан в позиции: ", center)
+	return new_object

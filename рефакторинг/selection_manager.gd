@@ -52,7 +52,10 @@ func sync_inspector_ui(object):
 	Static_CheckBox.set_block_signals(true)
 	
 	Mass_SpinBox.value = object.custom_mass
-	Scale_SpinBox.value = object.custom_scale
+	if object.has_method("get_size_px"): 
+		Scale_SpinBox.value = object.get_size_px()
+	else:
+		Scale_SpinBox.value = object.custom_scale
 	Color_picedbuton_object.color = object.custom_color
 	Static_CheckBox.button_pressed = object.is_static
 	
@@ -85,9 +88,12 @@ func on_mass_changed(value):
 
 func on_scale_changed(value):
 	if selected_object:
-		selected_object.custom_scale = value
-		if selected_object.has_method("update_size"):
-			selected_object.update_size()
+		if selected_object.has_method("set_size_px"):
+			selected_object.set_size_px(value)       # панель дала пиксели → объект меняет размер
+		else:
+			selected_object.custom_scale = value     # старый способ
+			if selected_object.has_method("update_size"):
+				selected_object.update_size()
 
 func on_color_object_chanded(new_color):
 	if selected_object:

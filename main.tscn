@@ -200,10 +200,14 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
+[node name="Label4" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=2121007478]
+layout_mode = 2
+text = "МАССА"
+
 [node name="SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=862498572]
 layout_mode = 2
+max_value = 1000.0
 step = 0.1
-value = 1.0
 
 [node name="Label2" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1801490245]
 layout_mode = 2
@@ -212,7 +216,7 @@ text = "РАЗМЕР"
 [node name="Scale_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1951950113]
 layout_mode = 2
 min_value = 0.01
-max_value = 10.0
+max_value = 1000.0
 step = 0.01
 value = 1.0
 

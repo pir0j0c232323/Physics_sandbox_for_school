@@ -71,5 +71,7 @@ func _draw():
 			points.append(first_point + Vector2(cos(angle), sin(angle))*radius)
 		draw_colored_polygon(points, defolt_prizrac_color)         
 		draw_arc(first_point,radius, 0, TAU, 48, defolt_prizrac_color, defolt_prizrak_tolshina)
-		
+		var center_of_radius = (first_point + current_point)/2
+		var text_radius = "R = %.2f" % radius
+		draw_string(ThemeDB.fallback_font, center_of_radius + Vector2(8, -8), text_radius, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
 		

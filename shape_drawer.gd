@@ -6,6 +6,7 @@ var state: State = State.IDLE
 var draw_tool: int = 0
 var first_point: Vector2 = Vector2.ZERO
 var current_point: Vector2 = Vector2.ZERO
+var pen_position: Vector2 = Vector2.ZERO
 var defolt_punctir_color: Color = Color.AZURE
 var defolt_punctir_tolshina: float = 2.0
 var defolt_prizrac_color: Color = Color(1, 1, 1, 0.3)
@@ -15,6 +16,8 @@ var first_point_of_object
 var second_point_of_object 
 var thirt_point_of_object 
 var fourth_point_of_object
+
+var is_adjusting = false
 
 @onready var spawner = $"../ObjectSpawner"
 
@@ -34,22 +37,34 @@ func _process(delta: float):
 		queue_redraw()
 	elif state == State.IDLE:
 		visible = false
+	elif state == State.ADJUST and is_adjusting == true:
+		current_point = get_global_mouse_position()
+		queue_redraw()
 
 func _unhandled_input(event: InputEvent):
 	if state == State.IDLE:
 		return
+		
 		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if not event.pressed and state == State.DRAW:
 			state = State.ADJUST
 			print("🔧 ADJUST: призрак замер, можно править")
 			
+		if event.pressed and state == State.ADJUST:
+			var distance_to_pen = get_global_mouse_position().distance_to(pen_position)
+			if distance_to_pen <= 12:
+				is_adjusting = true
+		else:
+			is_adjusting = false
+	
 	if event.is_action_pressed("ui_cancel"):
 		cancel()
 		
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ENTER:
 		if state == State.ADJUST:
 			confirm()
+
 
 func cancel():
 	state = State.IDLE
@@ -87,6 +102,8 @@ func _draw():
 		var center_of_radius = (first_point + current_point)/2
 		var text_radius = "R = %.2f" % radius
 		draw_string(ThemeDB.fallback_font, center_of_radius + Vector2(8, -8), text_radius, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
+		pen_position = first_point + (napravlenie*radius)
+		draw_circle(pen_position, 6, Color.WHITE)
 	elif draw_tool == 1:
 		var dioganal = first_point.distance_to(current_point)
 		var napravlenie = (current_point - first_point).normalized()
@@ -117,3 +134,5 @@ func _draw():
 		var text_h = "H = %.2f" % h
 		draw_string(ThemeDB.fallback_font, center_of_h + Vector2(8, -8), text_h, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
 		draw_string(ThemeDB.fallback_font, center_of_w + Vector2(8, -8), text_w, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
+		pen_position = first_point + (napravlenie*dioganal)
+		draw_circle(pen_position, 6, Color.WHITE)

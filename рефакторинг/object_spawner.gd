@@ -73,3 +73,20 @@ func create_circle(center, radius):
 	new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
 	print("Объект создан в позиции: ", center)
 	return new_object
+
+func create_rectangle(a, c):
+	if not sim.can_edit():
+		return
+	var W = abs(c.x - a.x)
+	var H = abs(c.y - a.y)
+	var position = (a + c) / 2
+	var new_object = new_rectangle.instantiate()   # ← прямоугольник!
+	new_object.position = position
+	get_parent().add_child(new_object)
+	new_object.mass = new_object.custom_mass
+	new_object.set_color(new_object.custom_color)
+	new_object.set_size_px(W, H)                   # ← это делает всю работу
+	new_object.freeze = true
+	new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
+	print("Объект создан в позиции: ", position)
+	return new_object

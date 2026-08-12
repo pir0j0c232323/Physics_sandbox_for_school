@@ -34,6 +34,16 @@ func _base_size() -> float:
 			max_x = p.x
 	return max_x - min_x
 
+func _base_height() -> float:
+	var min_y: float = INF
+	var max_y: float = -INF
+	for p in $Polygon2D.polygon:
+		if p.y < min_y:
+			min_y = p.y
+		if p.y > max_y:
+			max_y = p.y
+	return max_y - min_y
+
 func _outline_add() -> float:
 	return (2.0 * OUTLINE_WIDTH) / _base_size()
 
@@ -95,3 +105,15 @@ func set_color(color):
 	orig_color = color
 	custom_color = color
 	$Polygon2D.modulate = color
+
+func  set_size_px(w, h):
+	var s: Vector2
+	s.x = w/ _base_size()
+	s.y = h/ _base_height()
+	$Polygon2D.scale = Vector2(s.x, s.y)
+	var col = get_node_or_null("CollisionShape2D")
+	if col == null:
+		col = get_node_or_null("CollisionPolygon2D")
+	if col != null:
+		col.scale = Vector2(s.x, s.y)
+	refresh_outline()

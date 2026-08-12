@@ -11,6 +11,11 @@ var defolt_punctir_tolshina: float = 2.0
 var defolt_prizrac_color: Color = Color(1, 1, 1, 0.3)
 var defolt_prizrak_tolshina = 5
 
+var first_point_of_object 
+var second_point_of_object 
+var thirt_point_of_object 
+var fourth_point_of_object
+
 @onready var spawner = $"../ObjectSpawner"
 
 func is_active() -> bool:
@@ -54,12 +59,20 @@ func confirm():
 	print("✅ СОЗДАТЬ: tool=", draw_tool, " p1=", first_point, " p2=", current_point)
 	state = State.IDLE
 
+#func draw_punktir_for_object():
+	#while  t < radius:
+			#var nachalo = first_point + napravlenie*t
+			#var konec = first_point + napravlenie*min(t+10.0, radius)
+			#draw_line(nachalo, konec, defolt_punctir_color, defolt_punctir_tolshina)
+			#t += 10.0 + 6.0
+
 func _draw():
 	print(" draw вызван")
 	if draw_tool == 0:
 		var radius = first_point.distance_to(current_point)
 		var napravlenie = (current_point - first_point).normalized()
 		var t = 0.0
+		#draw_punktir_for_object()
 		while  t < radius:
 			var nachalo = first_point + napravlenie*t
 			var konec = first_point + napravlenie*min(t+10.0, radius)
@@ -74,4 +87,33 @@ func _draw():
 		var center_of_radius = (first_point + current_point)/2
 		var text_radius = "R = %.2f" % radius
 		draw_string(ThemeDB.fallback_font, center_of_radius + Vector2(8, -8), text_radius, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
-		
+	elif draw_tool == 1:
+		var dioganal = first_point.distance_to(current_point)
+		var napravlenie = (current_point - first_point).normalized()
+		var t = 0.0
+		#draw_punktir_for_object()
+		while  t < dioganal:
+			var nachalo = first_point + napravlenie*t
+			var konec = first_point + napravlenie*min(t+10.0, dioganal)
+			draw_line(nachalo, konec, defolt_punctir_color, defolt_punctir_tolshina)
+			t += 10.0 + 6.0
+		var points = PackedVector2Array()
+		first_point_of_object = first_point
+		second_point_of_object = Vector2(first_point.x, current_point.y)
+		thirt_point_of_object = current_point
+		fourth_point_of_object = Vector2(current_point.x, first_point.y)
+		points.append(first_point_of_object)
+		points.append(second_point_of_object)
+		points.append(thirt_point_of_object)
+		points.append(fourth_point_of_object)
+		draw_colored_polygon(points, defolt_prizrac_color)
+		points.append(points[0]) 
+		draw_polyline(points, Color(1, 1, 1, 0.6), 2.0)
+		var w = second_point_of_object.distance_to(thirt_point_of_object)
+		var h = first_point_of_object.distance_to(second_point_of_object)
+		var center_of_w = (second_point_of_object + thirt_point_of_object) / 2
+		var center_of_h = (first_point_of_object + second_point_of_object) / 2
+		var text_w = "W = %.2f" % w
+		var text_h = "H = %.2f" % h
+		draw_string(ThemeDB.fallback_font, center_of_h + Vector2(8, -8), text_h, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
+		draw_string(ThemeDB.fallback_font, center_of_w + Vector2(8, -8), text_w, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)

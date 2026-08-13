@@ -17,7 +17,10 @@ var second_point_of_object
 var thirt_point_of_object 
 var fourth_point_of_object
 
+var poly_points: PackedVector2Array
+
 var is_adjusting = false
+var adjust_index: int = -1
 
 var breath: float = 0.0
 var breath_tween: Tween = null
@@ -33,6 +36,9 @@ func begin_draw(pos:Vector2):
 	current_point = pos
 	state = State.DRAW
 	visible = true
+	if draw_tool == 2:
+		poly_points.clear()
+		poly_points.append(pos)
 	print("✏️ DRAW: начали с точки ", pos)
 
 func _process(delta: float):
@@ -43,32 +49,50 @@ func _process(delta: float):
 		visible = false
 	elif state == State.ADJUST:
 		if is_adjusting:
-			current_point = get_global_mouse_position()
+			if draw_tool == 2:
+				poly_points[adjust_index] = get_global_mouse_position()
+			else:
+				current_point = get_global_mouse_position()
 		queue_redraw()
-	
 
 func _unhandled_input(event: InputEvent):
+	var distance_to_pen = get_global_mouse_position().distance_to(pen_position)
 	if state == State.IDLE:
 		return
-		
-		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if not event.pressed and state == State.DRAW:
+		if not event.pressed and state == State.DRAW and draw_tool != 2:
 			state = State.ADJUST
 			start_breathing()
+		
+		if event.pressed and state == State.DRAW and draw_tool == 2:
+			if is_magnet():
+				close_polygon()
+			elif get_global_mouse_position().distance_to(poly_points[poly_points.size() - 1]) > 3:
+				poly_points.append(get_global_mouse_position())
 			
 		if event.pressed and state == State.ADJUST:
-			var distance_to_pen = get_global_mouse_position().distance_to(pen_position)
-			if distance_to_pen <= 12:
-				is_adjusting = true
-				stop_breathing()
+			if draw_tool == 2:
+				adjust_index = -1
+				is_adjusting = false
+				for idx in range(poly_points.size()):
+					if get_global_mouse_position().distance_to(poly_points[idx]) <= 12:
+						adjust_index = idx
+						is_adjusting = true
+						stop_breathing()
+						break
+			if draw_tool == 0 or draw_tool == 1:
+				if distance_to_pen <= 12:
+					is_adjusting = true
+					stop_breathing()
 		elif not event.pressed and state == State.ADJUST:
 			is_adjusting = false
+			adjust_index = -1
 			start_breathing()
 	
-	if event.is_action_pressed("ui_cancel"):
+	if event is InputEventKey and event.pressed and (event.keycode == KEY_BACKSPACE or event.keycode == KEY_DELETE):
 		cancel()
-		
+	if event.is_action_pressed("ui_cancel"): 
+		cancel()
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ENTER:
 		if state == State.ADJUST:
 			confirm()
@@ -99,27 +123,13 @@ func confirm():
 		var obj = spawner.create_rectangle(first_point, current_point)
 		selection.add_to_selection(obj)
 	state = State.IDLE
-	
-
-#func draw_punktir_for_object():
-	#while  t < radius:
-			#var nachalo = first_point + napravlenie*t
-			#var konec = first_point + napravlenie*min(t+10.0, radius)
-			#draw_line(nachalo, konec, defolt_punctir_color, defolt_punctir_tolshina)
-			#t += 10.0 + 6.0
 
 func _draw():
 	var glow = Color(1, 1, 1, 0.35 + breath * 0.3)  
 	if draw_tool == 0:
 		var radius = first_point.distance_to(current_point)
 		var napravlenie = (current_point - first_point).normalized()
-		var t = 0.0
-		#draw_punktir_for_object()
-		while  t < radius:
-			var nachalo = first_point + napravlenie*t
-			var konec = first_point + napravlenie*min(t+10.0, radius)
-			draw_line(nachalo, konec, defolt_punctir_color, defolt_punctir_tolshina)
-			t += 10.0 + 6.0
+		draw_punktir(first_point, current_point)
 		var points = PackedVector2Array()
 		for i in range(48):
 			var angle = i / 48.0 * TAU
@@ -134,13 +144,7 @@ func _draw():
 	elif draw_tool == 1:
 		var dioganal = first_point.distance_to(current_point)
 		var napravlenie = (current_point - first_point).normalized()
-		var t = 0.0
-		#draw_punktir_for_object()
-		while  t < dioganal:
-			var nachalo = first_point + napravlenie*t
-			var konec = first_point + napravlenie*min(t+10.0, dioganal)
-			draw_line(nachalo, konec, defolt_punctir_color, defolt_prizrak_tolshina)
-			t += 10.0 + 6.0
+		draw_punktir(first_point, current_point)
 		var points = PackedVector2Array()
 		first_point_of_object = first_point
 		second_point_of_object = Vector2(first_point.x, current_point.y)
@@ -163,7 +167,35 @@ func _draw():
 		draw_string(ThemeDB.fallback_font, center_of_w + Vector2(8, -8), text_w, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
 		pen_position = first_point + (napravlenie*dioganal)
 		draw_circle(pen_position, 4, Color.WHITE)
-		
+	elif draw_tool == 2:
+		var n = poly_points.size()
+		if state == State.DRAW:
+			var target = poly_points[0] if is_magnet() else current_point
+			if n >= 2:
+				var preview = PackedVector2Array(poly_points)   
+				preview.append(target)
+				draw_colored_polygon(preview, defolt_prizrac_color)
+			if n >= 2:
+				draw_polyline(poly_points, Color(1, 1, 1, 0.6), 2.0)
+			draw_punktir(poly_points[n - 1], target)
+			for i in range(1, n - 1):
+				var v = poly_points[i]
+				var deg = abs(rad_to_deg((poly_points[i - 1] - v).angle_to(poly_points[i + 1] - v)))
+				draw_string(ThemeDB.fallback_font, v + Vector2(8, -8), "%.1f°" % deg, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
+			if n >= 2:
+				var v = poly_points[n - 1]
+				var deg = abs(rad_to_deg((poly_points[n - 2] - v).angle_to(target - v)))
+				draw_string(ThemeDB.fallback_font, v + Vector2(8, -8), "%.1f°" % deg, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
+			if is_magnet():
+				draw_circle(poly_points[0], 4.5, Color.WHITE)
+		elif state == State.ADJUST:
+			draw_colored_polygon(poly_points, defolt_prizrac_color)
+			var closed = PackedVector2Array(poly_points)
+			closed.append(poly_points[0])
+			draw_polyline(closed, Color(1, 1, 1, 0.6), 2.0)
+			for i in range(n):
+				draw_circle(poly_points[i], 2.5, Color.AQUA)
+
 func start_breathing():
 	if breath_tween:
 		breath_tween.kill()
@@ -176,3 +208,23 @@ func stop_breathing():
 		breath_tween.kill()
 		breath_tween = null
 	breath = 0.0
+
+func close_polygon():
+	state = State.ADJUST
+	start_breathing()
+	print("🔒 Контур замкнут")
+
+func is_magnet() -> bool:
+	if poly_points.size() < 3:
+		return false
+	return Input.is_key_pressed(KEY_SHIFT) or current_point.distance_to(poly_points[0]) <= 12
+
+func draw_punktir(a: Vector2, b: Vector2):
+	var length = a.distance_to(b)
+	var napravlenie = (b - a).normalized()
+	var t = 0.0
+	while t < length:
+		var nachalo = a + napravlenie * t
+		var konec = a + napravlenie * min(t + 10.0, length)
+		draw_line(nachalo, konec, defolt_punctir_color, defolt_punctir_tolshina)
+		t += 10.0 + 6.0

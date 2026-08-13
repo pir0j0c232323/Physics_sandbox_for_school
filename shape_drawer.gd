@@ -28,6 +28,12 @@ var breath_tween: Tween = null
 @onready var spawner = $"../ObjectSpawner"
 @onready var selection = $"../SelectionManager"
 
+@onready var Ravnostorony_button = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/ravnostorony_CheckBox"
+
+func _ready() -> void:
+	if Ravnostorony_button:
+		Ravnostorony_button.toggled.connect(make_equilateral)
+
 func is_active() -> bool:
 	return state != State.IDLE
 
@@ -121,6 +127,9 @@ func confirm():
 			state = State.IDLE
 			return
 		var obj = spawner.create_rectangle(first_point, current_point)
+		selection.add_to_selection(obj)
+	elif draw_tool == 2:
+		var obj = spawner.create_polygon(poly_points)
 		selection.add_to_selection(obj)
 	state = State.IDLE
 
@@ -228,3 +237,26 @@ func draw_punktir(a: Vector2, b: Vector2):
 		var konec = a + napravlenie * min(t + 10.0, length)
 		draw_line(nachalo, konec, defolt_punctir_color, defolt_punctir_tolshina)
 		t += 10.0 + 6.0
+
+func make_equilateral():
+	var n = poly_points.size()
+	if poly_points.size() <3:
+		return
+	# центр — среднее всех вершин
+	var center = Vector2.ZERO
+	for p in poly_points:
+		center += p
+	center /= n
+	# радиус — среднее расстояние до вершин
+	var R = 0.0
+	for p in poly_points:
+		R += center.distance_to(p)
+	R /= n
+	# сохраняем поворот первой вершины
+	var start_angle = (poly_points[0] - center).angle()
+	# пересобираем правильный n-угольник
+	poly_points.clear()
+	for i in range(n):
+		var a = start_angle + i * TAU / n
+		poly_points.append(center + Vector2(cos(a), sin(a)) * R)
+	queue_redraw()

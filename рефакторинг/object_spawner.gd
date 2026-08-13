@@ -14,6 +14,8 @@ var number_selected_object = 0
 @onready var rectangle_button = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/RectangleButton
 @onready var triangle_button = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/TriangleButton
 @onready var gravity_button = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World/GRAVITY
+@onready var equilateral_button = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/EquilateralButton
+
 
 func _ready():
 	if circle_button:
@@ -22,6 +24,9 @@ func _ready():
 		rectangle_button.pressed.connect(_on_rectangle_pressed)
 	if triangle_button:
 		triangle_button.pressed.connect(_on_triangle_pressed)
+	if equilateral_button:
+		equilateral_button.pressed.connect(_on_equilateral_pressed)
+
 
 func _on_circle_pressed():
 	number_selected_object = 0
@@ -35,7 +40,6 @@ func _on_triangle_pressed():
 	number_selected_object = 2
 	print("Выбран: Треугольник")
 
-# Удобная обёртка: «создай то, что выбрано» — ей будет пользоваться ввод
 func spawn_selected(position):
 	create_object(number_selected_object, position)
 
@@ -90,3 +94,35 @@ func create_rectangle(a, c):
 	new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
 	print("Объект создан в позиции: ", position)
 	return new_object
+
+func create_polygon(world_points):
+	if not sim.can_edit():
+		return
+	var new_object = new_triangle.instantiate()
+	var center = Vector2.ZERO
+	for p in world_points:
+		center += p
+	center /= world_points.size()
+	new_object.position = center
+	get_parent().add_child(new_object)
+	var local = PackedVector2Array()
+	for p in world_points:
+		local.append(p - center)
+	for node in new_object.get_children():
+		if node is Polygon2D:
+			node.polygon = local
+		if node is CollisionPolygon2D:
+			node.polygon = local
+	var col = new_object.get_node_or_null("CollisionPolygon2D")
+	if col != null:
+		col.polygon = local
+	new_object.mass = new_object.custom_mass
+	new_object.set_color(new_object.custom_color)
+	new_object.freeze = true
+	new_object.gravity_scale = 1 if gravity_button.button_pressed else 0
+	new_object.update_size()   # в конце! чтобы обводка пересчиталась от НОВОЙ формы
+	print("Объект-полигон создан: ", world_points.size(), " вершин")
+	return new_object	
+
+func _on_equilateral_pressed():
+	drawer.make_equilateral()

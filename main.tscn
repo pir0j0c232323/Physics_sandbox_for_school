@@ -238,6 +238,10 @@ text = "ЦВЕТ"
 [node name="ColorPickerButton" type="ColorPickerButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=972767928]
 layout_mode = 2
 
+[node name="ravnostorony_CheckBox" type="CheckBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1219151419]
+layout_mode = 2
+text = "РАВНОСТОРОННИЙ"
+
 [node name="Static_CheckBox" type="CheckBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1463751267]
 layout_mode = 2
 text = "Обьект статичен"

@@ -14,6 +14,7 @@ var selected_object = null
 @onready var Height_Label =$"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Label5"
 @onready var Size_Label = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Label2"
 
+
 func _ready():
 	if Mass_SpinBox:
 		Mass_SpinBox.value_changed.connect(on_mass_changed)

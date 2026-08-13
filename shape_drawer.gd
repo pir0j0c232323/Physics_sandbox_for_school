@@ -19,6 +19,9 @@ var fourth_point_of_object
 
 var is_adjusting = false
 
+var breath: float = 0.0
+var breath_tween: Tween = null
+
 @onready var spawner = $"../ObjectSpawner"
 @onready var selection = $"../SelectionManager"
 
@@ -38,9 +41,11 @@ func _process(delta: float):
 		queue_redraw()
 	elif state == State.IDLE:
 		visible = false
-	elif state == State.ADJUST and is_adjusting == true:
-		current_point = get_global_mouse_position()
+	elif state == State.ADJUST:
+		if is_adjusting:
+			current_point = get_global_mouse_position()
 		queue_redraw()
+	
 
 func _unhandled_input(event: InputEvent):
 	if state == State.IDLE:
@@ -50,14 +55,16 @@ func _unhandled_input(event: InputEvent):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if not event.pressed and state == State.DRAW:
 			state = State.ADJUST
-			print("🔧 ADJUST: призрак замер, можно править")
+			start_breathing()
 			
 		if event.pressed and state == State.ADJUST:
 			var distance_to_pen = get_global_mouse_position().distance_to(pen_position)
 			if distance_to_pen <= 12:
 				is_adjusting = true
-		else:
+				stop_breathing()
+		elif not event.pressed and state == State.ADJUST:
 			is_adjusting = false
+			start_breathing()
 	
 	if event.is_action_pressed("ui_cancel"):
 		cancel()
@@ -66,12 +73,13 @@ func _unhandled_input(event: InputEvent):
 		if state == State.ADJUST:
 			confirm()
 
-
 func cancel():
+	stop_breathing()
 	state = State.IDLE
 	print("❌ Чертёж отменён")
 
 func confirm():
+	stop_breathing()
 	if draw_tool == 0:
 		var distance = first_point.distance_to(current_point)
 		if distance<0.01:
@@ -101,7 +109,7 @@ func confirm():
 			#t += 10.0 + 6.0
 
 func _draw():
-	print(" draw вызван")
+	var glow = Color(1, 1, 1, 0.35 + breath * 0.3)  
 	if draw_tool == 0:
 		var radius = first_point.distance_to(current_point)
 		var napravlenie = (current_point - first_point).normalized()
@@ -117,12 +125,12 @@ func _draw():
 			var angle = i / 48.0 * TAU
 			points.append(first_point + Vector2(cos(angle), sin(angle))*radius)
 		draw_colored_polygon(points, defolt_prizrac_color)         
-		draw_arc(first_point,radius, 0, TAU, 48, defolt_prizrac_color, defolt_prizrak_tolshina)
+		draw_arc(first_point,radius, 0, TAU, 48, glow, defolt_prizrak_tolshina)
 		var center_of_radius = (first_point + current_point)/2
 		var text_radius = "R = %.2f" % radius
 		draw_string(ThemeDB.fallback_font, center_of_radius + Vector2(8, -8), text_radius, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
 		pen_position = first_point + (napravlenie*radius)
-		draw_circle(pen_position, 6, Color.WHITE)
+		draw_circle(pen_position, 4, Color.WHITE)
 	elif draw_tool == 1:
 		var dioganal = first_point.distance_to(current_point)
 		var napravlenie = (current_point - first_point).normalized()
@@ -131,7 +139,7 @@ func _draw():
 		while  t < dioganal:
 			var nachalo = first_point + napravlenie*t
 			var konec = first_point + napravlenie*min(t+10.0, dioganal)
-			draw_line(nachalo, konec, defolt_punctir_color, defolt_punctir_tolshina)
+			draw_line(nachalo, konec, defolt_punctir_color, defolt_prizrak_tolshina)
 			t += 10.0 + 6.0
 		var points = PackedVector2Array()
 		first_point_of_object = first_point
@@ -142,7 +150,7 @@ func _draw():
 		points.append(second_point_of_object)
 		points.append(thirt_point_of_object)
 		points.append(fourth_point_of_object)
-		draw_colored_polygon(points, defolt_prizrac_color)
+		draw_colored_polygon(points, glow)
 		points.append(points[0]) 
 		draw_polyline(points, Color(1, 1, 1, 0.6), 2.0)
 		var w = second_point_of_object.distance_to(thirt_point_of_object)
@@ -154,4 +162,17 @@ func _draw():
 		draw_string(ThemeDB.fallback_font, center_of_h + Vector2(8, -8), text_h, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
 		draw_string(ThemeDB.fallback_font, center_of_w + Vector2(8, -8), text_w, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
 		pen_position = first_point + (napravlenie*dioganal)
-		draw_circle(pen_position, 6, Color.WHITE)
+		draw_circle(pen_position, 4, Color.WHITE)
+		
+func start_breathing():
+	if breath_tween:
+		breath_tween.kill()
+	breath_tween = create_tween().set_loops()
+	breath_tween.tween_property(self, "breath", 1.0, 1.2)
+	breath_tween.tween_property(self, "breath", 0.0, 1.2)
+
+func stop_breathing():
+	if breath_tween:
+		breath_tween.kill()
+		breath_tween = null
+	breath = 0.0

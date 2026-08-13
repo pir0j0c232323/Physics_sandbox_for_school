@@ -184,10 +184,9 @@ layout_mode = 2
 
 [node name="TabContainer" type="TabContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel" unique_id=238483611]
 layout_mode = 2
-current_tab = 1
+current_tab = 0
 
 [node name="World" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=1314560991]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -197,6 +196,7 @@ theme_override_fonts/font = SubResource("FontFile_1n5va")
 text = "ГРАВИТАЦИЯ ВЫКЛ"
 
 [node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 

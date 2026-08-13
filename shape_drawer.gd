@@ -32,7 +32,7 @@ var breath_tween: Tween = null
 
 func _ready() -> void:
 	if Ravnostorony_button:
-		Ravnostorony_button.toggled.connect(make_equilateral)
+		Ravnostorony_button.pressed.connect(make_equilateral)
 
 func is_active() -> bool:
 	return state != State.IDLE
@@ -131,6 +131,7 @@ func confirm():
 	elif draw_tool == 2:
 		var obj = spawner.create_polygon(poly_points)
 		selection.add_to_selection(obj)
+		poly_points.clear()
 	state = State.IDLE
 
 func _draw():
@@ -177,6 +178,7 @@ func _draw():
 		pen_position = first_point + (napravlenie*dioganal)
 		draw_circle(pen_position, 4, Color.WHITE)
 	elif draw_tool == 2:
+		print("_draw для полигона, вершин: ", poly_points.size(), " state: ", state)  # ← добавь
 		var n = poly_points.size()
 		if state == State.DRAW:
 			var target = poly_points[0] if is_magnet() else current_point
@@ -239,9 +241,16 @@ func draw_punktir(a: Vector2, b: Vector2):
 		t += 10.0 + 6.0
 
 func make_equilateral():
+	print("draw_tool: ", draw_tool)
+	print("STATE: ", state) 
+	print("ФУНКЦИЯ ВЫЗВАНА, вершин: ", poly_points.size())
 	var n = poly_points.size()
 	if poly_points.size() <3:
 		return
+	if state == State.IDLE:
+		state = State.ADJUST   # ← призрак оживает из последнего нарисованного
+		visible = true
+		start_breathing()
 	# центр — среднее всех вершин
 	var center = Vector2.ZERO
 	for p in poly_points:
@@ -259,4 +268,5 @@ func make_equilateral():
 	for i in range(n):
 		var a = start_angle + i * TAU / n
 		poly_points.append(center + Vector2(cos(a), sin(a)) * R)
+	print("ПОСЛЕ ИЗМЕНЕНИЯ, вершин: ", poly_points.size())  # ← добавь
 	queue_redraw()

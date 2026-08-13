@@ -14,7 +14,7 @@ var number_selected_object = 0
 @onready var rectangle_button = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/RectangleButton
 @onready var triangle_button = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/TriangleButton
 @onready var gravity_button = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/World/GRAVITY
-@onready var equilateral_button = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/EquilateralButton
+@onready var equilateral_button = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/ravnostorony_CheckBox"
 
 
 func _ready():
@@ -26,6 +26,7 @@ func _ready():
 		triangle_button.pressed.connect(_on_triangle_pressed)
 	if equilateral_button:
 		equilateral_button.pressed.connect(_on_equilateral_pressed)
+	print("equilateral_button exists: ", equilateral_button != null)
 
 
 func _on_circle_pressed():
@@ -125,4 +126,5 @@ func create_polygon(world_points):
 	return new_object	
 
 func _on_equilateral_pressed():
+	print("КНОПКА НАЖАТА!")
 	drawer.make_equilateral()

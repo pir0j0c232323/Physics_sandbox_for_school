@@ -9,6 +9,7 @@ extends Control
 
 var bg_bee = preload("res://texturs/Frame 2.png") 
 var bg_peach = preload("res://texturs/white ui.png")
+var bg_mint = preload("res://texturs/mint theme ui.png")
 
 func _ready():
 	# Автоматически выставляем центр кнопок (ровно половина от их размера)
@@ -23,6 +24,7 @@ func _ready():
 	$NastroikiButton.pressed.connect(_on_nastroiki_button_pressed)
 	$Panel/SettingsMenu/BeeButton.pressed.connect(_on_bee_theme_pressed)
 	$Panel/SettingsMenu/PeachButton.pressed.connect(_on_peach_theme_pressed)
+	$Panel/SettingsMenu/MintButton.pressed.connect(_on_mint_theme_pressed)
 	
 	# Наведение мыши на кнопку «СЮЖЕТ»
 	$VBoxContainer/StoryButton.mouse_entered.connect(_on_story_button_mouse_entered)
@@ -132,4 +134,14 @@ func _on_peach_theme_pressed():
 		$Background/name.modulate = peach_color
 	if has_node("Panel/theme"):
 		$Panel/theme.modulate = peach_color
+		
+func _on_mint_theme_pressed():
+	background.texture = bg_mint
+	# Задаем цвет для темы Bee (подставь свой HEX-код из Figma)
+	var mint_color = Color("008f26ff") 
+	
+	if has_node("Background/name"):
+		$Background/name.modulate = mint_color
+	if has_node("Panel/theme"):
+		$Panel/theme.modulate = mint_color
 	

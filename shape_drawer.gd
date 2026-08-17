@@ -178,7 +178,6 @@ func _draw():
 		pen_position = first_point + (napravlenie*dioganal)
 		draw_circle(pen_position, 4, Color.WHITE)
 	elif draw_tool == 2:
-		print("_draw для полигона, вершин: ", poly_points.size(), " state: ", state)  # ← добавь
 		var n = poly_points.size()
 		if state == State.DRAW:
 			var target = poly_points[0] if is_magnet() else current_point

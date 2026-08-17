@@ -19,6 +19,10 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[editor]
+
+version_control/plugin_name="https://github.com/pir0rip23/physics-sandbox-wip.git"
+
 [input]
 
 delete_all={

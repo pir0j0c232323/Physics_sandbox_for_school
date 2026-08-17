@@ -1,9 +1,12 @@
-extends Node
+extends Node2D
 
 # Выделение объектов
 var selected_objects = []
 var selected_object = null
 
+var object_editing = false
+
+@onready var drawer = $"../Shape_drawer"
 @onready var sim = $"../SimulationController"
 @onready var right_tabs = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer
 @onready var Mass_SpinBox = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/SpinBox
@@ -26,6 +29,25 @@ func _ready():
 		Static_CheckBox.toggled.connect(on_static_toggled)
 	if Height_SpinBox:
 		Height_SpinBox.value_changed.connect(on_height_changed)
+
+func _draw():
+	if drawer.is_active() or not sim.can_edit():
+		return
+	var obj = _selected_circle()
+	if obj:
+		draw_circle(handle_position(obj), 4, Color.WHITE)
+
+func _process(delta):
+	if object_editing:
+		var obj = _selected_circle()
+		if not obj:
+			object_editing = false
+			return
+		obj.set_size_px(get_global_mouse_position().distance_to(obj.global_position))
+		sync_inspector_ui(obj)
+		queue_redraw()
+	elif not drawer.is_active() and sim.can_edit() and _selected_circle():
+		queue_redraw()   
 
 func add_to_selection(object):
 	if not object in selected_objects:
@@ -140,3 +162,19 @@ func on_static_toggled(toggled_on: bool):
 			selected_object.freeze = toggled_on
 		else:
 			selected_object.freeze = true
+
+func handle_position(obj):
+	return obj.global_position + Vector2(obj.get_size_px(), 0).rotated(obj.global_rotation)
+
+func _selected_circle():
+	var obj = selected_object
+	if obj and is_instance_valid(obj) and obj.has_method("get_size_px") and not (obj.get_size_px() is Vector2):
+		return obj
+	return null
+
+func try_grab_handle(pos) -> bool:
+	var obj = _selected_circle()
+	if obj and pos.distance_to(handle_position(obj)) <= 12:
+		object_editing = true
+		return true
+	return false

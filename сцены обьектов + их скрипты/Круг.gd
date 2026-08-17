@@ -41,11 +41,11 @@ func refresh_outline():
 	
 	if DEBUG_OUTLINE:
 		if is_static:
-			selection_outline.modulate = Color.RED # Если статичный - красная обводка
+			selection_outline.modulate = Color.WEB_MAROON # Если статичный - красная обводка
 		else:
-			selection_outline.modulate = Color(1, 1, 0) # Если обычный - желтая обводка
+			selection_outline.modulate = Color(0, 0, 0) # Если обычный - желтая обводка
 		var real_border = (selection_outline.scale.x - $Sprite2D.scale.x) * base_size / 2.0
-		print("base=", base_size, " | add=", real_border, "px должно быть ", OUTLINE_WIDTH)
+		#print("base=", base_size, " | add=", real_border, "px должно быть ", OUTLINE_WIDTH)
 
 func update_size():
 	var s = BASE_SCALE * custom_scale

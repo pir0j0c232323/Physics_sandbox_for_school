@@ -52,6 +52,8 @@ func _unhandled_input(event):
 					break
 		
 		if not found_link:
+			if selection.try_grab_handle(mouse_pos):
+				return
 			if links.selected_link != null or selection.selected_objects.size() != 0:
 				links.deselect_link()
 				selection.deselect_all_objects()

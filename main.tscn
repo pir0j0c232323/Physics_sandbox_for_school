@@ -303,9 +303,6 @@ script = ExtResource("6_272bh")
 [node name="ObjectSpawner" type="Node" parent="." unique_id=776412356]
 script = ExtResource("7_5vw27")
 
-[node name="SelectionManager" type="Node" parent="." unique_id=1652423285]
-script = ExtResource("8_efxa6")
-
 [node name="LinkManager" type="Node" parent="." unique_id=1226318020]
 script = ExtResource("9_dg77c")
 
@@ -317,3 +314,6 @@ script = ExtResource("11_w48qg")
 
 [node name="Shape_drawer" type="Node2D" parent="." unique_id=272177524]
 script = ExtResource("12_dg77c")
+
+[node name="SelectionManager" type="Node2D" parent="." unique_id=1269904277]
+script = ExtResource("8_efxa6")

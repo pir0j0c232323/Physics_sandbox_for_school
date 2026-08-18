@@ -11,14 +11,14 @@ config_version=5
 [application]
 
 config/name="Physics_sadbox-try2"
-run/main_scene="res://main.tscn"
+run/main_scene="uid://bt7wyxrp7q33k"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [display]
 
 window/size/viewport_width=1440
 window/size/viewport_height=900
-window/size/borderless=true
+window/size/mode=2
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

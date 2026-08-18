@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bt7wyxrp7q33k"]
 
 [ext_resource type="Script" uid="uid://ble1rbke520q6" path="res://main_menu.gd" id="1_06t4h"]
-[ext_resource type="Texture2D" uid="uid://miq6nqc7a2tr" path="res://texturs/white ui.png" id="2_fu7sn"]
+[ext_resource type="Texture2D" uid="uid://glsx3oir5dvi" path="res://texturs/standarblackt ui.png" id="2_dy7ct"]
 [ext_resource type="VideoStream" uid="uid://dm3g7nrn03jwl" path="res://content/геймплей.ogv" id="3_glbon"]
 [ext_resource type="FontFile" uid="uid://ba6m5vv1271xr" path="res://texturs/Montserrat-SemiBold.ttf" id="3_jix8l"]
 [ext_resource type="FontFile" uid="uid://dw2y8ygwalu4m" path="res://texturs/Montserrat-ExtraBold.ttf" id="3_nlkkf"]
@@ -9,11 +9,12 @@
 [ext_resource type="Texture2D" uid="uid://d0q6hsy2kyofe" path="res://texturs/free-icon-gear-1242494 2.png" id="6_nlkkf"]
 [ext_resource type="Texture2D" uid="uid://mvdp3jt8dmhp" path="res://texturs/mint.png" id="7_0o4t1"]
 [ext_resource type="Texture2D" uid="uid://c5uxl2rs75t8n" path="res://texturs/white.png" id="8_0k4wn"]
+[ext_resource type="Texture2D" uid="uid://ymfhs5ay7kbe" path="res://texturs/whiteblack.png" id="9_0k4wn"]
+[ext_resource type="Texture2D" uid="uid://jpuv6i688wno" path="res://texturs/blackwhite.png" id="10_j5v2v"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_g4v7s"]
 font = ExtResource("3_nlkkf")
 font_size = 80
-font_color = Color(1, 0.3647059, 0.3764706, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g4v7s"]
 bg_color = Color(0.81960785, 0.83137256, 0.8156863, 0.7058824)
@@ -56,7 +57,7 @@ script = ExtResource("1_06t4h")
 layout_mode = 0
 offset_right = 1440.0
 offset_bottom = 900.0
-texture = ExtResource("2_fu7sn")
+texture = ExtResource("2_dy7ct")
 
 [node name="name" type="Label" parent="Background" unique_id=29079250]
 layout_mode = 0
@@ -88,14 +89,18 @@ autoplay = true
 expand = true
 loop = true
 
-[node name="SettingsMenu" type="VBoxContainer" parent="Panel" unique_id=170616136]
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel" unique_id=945160023]
 visible = false
 layout_mode = 0
-offset_top = 126.0
-offset_right = 906.0
-offset_bottom = 617.0
+offset_left = 16.0
+offset_top = 178.0
+offset_right = 436.0
+offset_bottom = 616.0
 
-[node name="BeeButton" type="Button" parent="Panel/SettingsMenu" unique_id=2018558176]
+[node name="SettingsMenu" type="VBoxContainer" parent="Panel/ScrollContainer" unique_id=170616136]
+layout_mode = 2
+
+[node name="BeeButton" type="Button" parent="Panel/ScrollContainer/SettingsMenu" unique_id=2018558176]
 custom_minimum_size = Vector2(295, 110)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
@@ -109,7 +114,7 @@ text = "bee
 "
 icon = ExtResource("6_dy7ct")
 
-[node name="MintButton" type="Button" parent="Panel/SettingsMenu" unique_id=1007348702]
+[node name="MintButton" type="Button" parent="Panel/ScrollContainer/SettingsMenu" unique_id=1007348702]
 custom_minimum_size = Vector2(295, 110)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
@@ -122,7 +127,7 @@ theme_override_styles/focus = SubResource("StyleBoxFlat_dmjyp")
 text = "black mint"
 icon = ExtResource("7_0o4t1")
 
-[node name="PeachButton" type="Button" parent="Panel/SettingsMenu" unique_id=253311572]
+[node name="PeachButton" type="Button" parent="Panel/ScrollContainer/SettingsMenu" unique_id=253311572]
 custom_minimum_size = Vector2(295, 110)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
@@ -132,17 +137,45 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_dmjyp")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_dmjyp")
 theme_override_styles/hover = SubResource("StyleBoxFlat_8whpc")
 theme_override_styles/focus = SubResource("StyleBoxFlat_dmjyp")
-text = "white peach
+text = " white peach     
 "
 icon = ExtResource("8_0k4wn")
+
+[node name="standart" type="Button" parent="Panel/ScrollContainer/SettingsMenu" unique_id=774417267]
+custom_minimum_size = Vector2(295, 110)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_dmjyp")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_dmjyp")
+theme_override_styles/hover = SubResource("StyleBoxFlat_8whpc")
+theme_override_styles/focus = SubResource("StyleBoxFlat_dmjyp")
+text = "white 
+"
+icon = ExtResource("9_0k4wn")
+
+[node name="standartblack" type="Button" parent="Panel/ScrollContainer/SettingsMenu" unique_id=1173740443]
+custom_minimum_size = Vector2(295, 110)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_jix8l")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_dmjyp")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_dmjyp")
+theme_override_styles/hover = SubResource("StyleBoxFlat_8whpc")
+theme_override_styles/focus = SubResource("StyleBoxFlat_dmjyp")
+text = "black
+"
+icon = ExtResource("10_j5v2v")
 
 [node name="theme" type="Label" parent="Panel" unique_id=892963502]
 visible = false
 layout_mode = 0
-offset_left = 322.0
-offset_top = 11.0
-offset_right = 569.0
-offset_bottom = 114.0
+offset_left = 102.0
+offset_top = 20.0
+offset_right = 349.0
+offset_bottom = 123.0
 text = "Темы"
 label_settings = SubResource("LabelSettings_g4v7s")
 

@@ -93,3 +93,22 @@ func set_color(color):
 	orig_color = color
 	custom_color = color
 	$Polygon2D.modulate = color
+
+func get_points_count() -> int:
+	return $Polygon2D.polygon.size()
+
+func get_point_world(i: int) -> Vector2:
+	return to_global($Polygon2D.polygon[i] * $Polygon2D.scale)
+
+func set_point_world(i: int, world_pos: Vector2):
+	var local = to_local(world_pos) / $Polygon2D.scale
+	# ⚠️ ГОДОТ-ЛОВУШКА: polygon возвращает КОПИЮ, правим через переменную
+	var pts = $Polygon2D.polygon
+	pts[i] = local
+	$Polygon2D.polygon = pts
+	var col = get_node_or_null("CollisionPolygon2D")
+	if col:
+		var cp = col.polygon
+		cp[i] = local
+		col.polygon = cp
+	refresh_outline()

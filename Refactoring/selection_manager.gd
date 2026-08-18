@@ -6,6 +6,7 @@ var selected_object = null
 
 var object_editing = false
 
+@onready var camera = $"../Camera2D"
 @onready var drawer = $"../Shape_drawer"
 @onready var sim = $"../SimulationController"
 @onready var right_tabs = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer
@@ -35,7 +36,8 @@ func _draw():
 		return
 	var obj = _selected_circle()
 	if obj:
-		draw_circle(handle_position(obj), 4, Color.WHITE)
+		var normal_size = 4.0 / camera.zoom.x
+		draw_circle(handle_position(obj), normal_size, Color.WHITE)
 
 func _process(delta):
 	if object_editing:
@@ -174,6 +176,7 @@ func _selected_circle():
 
 func try_grab_handle(pos) -> bool:
 	var obj = _selected_circle()
+	var norm_grab = 12.0 / camera.zoom.x
 	if obj and pos.distance_to(handle_position(obj)) <= 12:
 		object_editing = true
 		return true

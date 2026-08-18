@@ -1,9 +1,9 @@
 extends Node
 
 # Прелоады сцен
-var new_ball = preload("res://сцены обьектов + их скрипты/круг.tscn")
-var new_rectangle = preload("res://сцены обьектов + их скрипты/прямоугольник.tscn")
-var new_triangle = preload("res://сцены обьектов + их скрипты/треугольник.tscn")
+var new_ball = preload("res://tscn obj  + his script/круг.tscn")
+var new_rectangle = preload("res://tscn obj  + his script/прямоугольник.tscn")
+var new_triangle = preload("res://tscn obj  + his script/треугольник.tscn")
 
 # Какая фигура выбрана для спавна
 var number_selected_object = 0

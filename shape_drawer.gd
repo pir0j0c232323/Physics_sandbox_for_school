@@ -22,6 +22,8 @@ var poly_points: PackedVector2Array
 var is_adjusting = false
 var adjust_index: int = -1
 
+var typed_text: String = ""
+
 var breath: float = 0.0
 var breath_tween: Tween = null
 
@@ -42,6 +44,7 @@ func begin_draw(pos:Vector2):
 	current_point = pos
 	state = State.DRAW
 	visible = true
+	typed_text = ""
 	if draw_tool == 2:
 		poly_points.clear()
 		poly_points.append(pos)
@@ -55,6 +58,7 @@ func _process(delta: float):
 		visible = false
 	elif state == State.ADJUST:
 		if is_adjusting:
+			typed_text = "" 
 			if draw_tool == 2:
 				poly_points[adjust_index] = get_global_mouse_position()
 			else:
@@ -101,12 +105,32 @@ func _unhandled_input(event: InputEvent):
 		cancel()
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ENTER:
 		if state == State.ADJUST:
-			confirm()
+			if typed_text != "":
+				if typed_text.is_valid_float():
+					var dir = (current_point - first_point).normalized()
+					if dir == Vector2.ZERO:
+						dir = Vector2.RIGHT
+					current_point = first_point + dir * max(1.0, typed_text.to_float())
+				typed_text = ""
+				queue_redraw()
+			else:
+				confirm()  
+	if event is InputEventKey and event.pressed and state == State.ADJUST and draw_tool == 0:
+		var c = event.unicode
+		if (c >= 48 and c <= 57) and typed_text.length() < 7:
+			typed_text += char(c)
+			_apply_typed_radius()
+		elif (c == 46 or c == 44) and not "." in typed_text:
+			typed_text += "."
+		elif event.keycode == KEY_BACKSPACE:
+			typed_text = typed_text.left(typed_text.length() - 1)
+			_apply_typed_radius()
 
 func cancel():
 	stop_breathing()
 	state = State.IDLE
 	print("❌ Чертёж отменён")
+	typed_text = ""
 
 func confirm():
 	stop_breathing()
@@ -133,6 +157,7 @@ func confirm():
 		selection.add_to_selection(obj)
 		poly_points.clear()
 	state = State.IDLE
+	typed_text = ""
 
 func _draw():
 	var glow = Color(1, 1, 1, 0.35 + breath * 0.3)  
@@ -147,7 +172,7 @@ func _draw():
 		draw_colored_polygon(points, defolt_prizrac_color)         
 		draw_arc(first_point,radius, 0, TAU, 48, glow, defolt_prizrak_tolshina)
 		var center_of_radius = (first_point + current_point)/2
-		var text_radius = "R = %.2f" % radius
+		var text_radius = typed_text if typed_text != "" else ("R = %.2f" % radius)
 		draw_string(ThemeDB.fallback_font, center_of_radius + Vector2(8, -8), text_radius, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, defolt_prizrac_color)
 		pen_position = first_point + (napravlenie*radius)
 		draw_circle(pen_position, 4, Color.WHITE)
@@ -268,4 +293,12 @@ func make_equilateral():
 		var a = start_angle + i * TAU / n
 		poly_points.append(center + Vector2(cos(a), sin(a)) * R)
 	print("ПОСЛЕ ИЗМЕНЕНИЯ, вершин: ", poly_points.size())  # ← добавь
+	queue_redraw()
+
+func _apply_typed_radius():
+	if typed_text.is_valid_float():
+		var dir = (current_point - first_point).normalized()
+		if dir == Vector2.ZERO:
+			dir = Vector2.RIGHT
+		current_point = first_point + dir * max(1.0, typed_text.to_float())
 	queue_redraw()

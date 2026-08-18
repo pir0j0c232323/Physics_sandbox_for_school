@@ -5,6 +5,7 @@ var selected_objects = []
 var selected_object = null
 
 var object_editing = false
+var handle_angle: float = 0.0
 
 @onready var camera = $"../Camera2D"
 @onready var drawer = $"../Shape_drawer"
@@ -18,8 +19,8 @@ var object_editing = false
 @onready var Height_Label =$"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Label5"
 @onready var Size_Label = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Label2"
 
-
 func _ready():
+	z_index = 2
 	if Mass_SpinBox:
 		Mass_SpinBox.value_changed.connect(on_mass_changed)
 	if Scale_SpinBox:
@@ -35,9 +36,23 @@ func _draw():
 	if drawer.is_active() or not sim.can_edit():
 		return
 	var obj = _selected_circle()
-	if obj:
-		var normal_size = 4.0 / camera.zoom.x
-		draw_circle(handle_position(obj), normal_size, Color.WHITE)
+	if not obj:
+		return
+	var zoom_level = camera.zoom.x if camera else 1.0
+	var pos = handle_position(obj)
+	
+	# Палка и цифра — ТОЛЬКО пока тянешь ручку
+	if object_editing:
+		
+		draw_dashed_line(obj.global_position, pos, Color(0.5, 0.8, 1.0, 0.5), 2.0 / zoom_level, 6.0 / zoom_level)
+		
+		var label = "%.2f" % obj.get_size_px()
+		
+		var outward = (pos - obj.global_position).normalized()
+		var label_pos = pos + outward * (18.0 / zoom_level)
+		draw_string(ThemeDB.fallback_font, label_pos, label, HORIZONTAL_ALIGNMENT_CENTER, -1, int(12.0 / zoom_level), Color.DARK_GRAY)
+	
+	draw_cad_handle(pos, 4.5)
 
 func _process(delta):
 	if object_editing:
@@ -45,6 +60,7 @@ func _process(delta):
 		if not obj:
 			object_editing = false
 			return
+		handle_angle = (get_global_mouse_position() - obj.global_position).angle()
 		obj.set_size_px(get_global_mouse_position().distance_to(obj.global_position))
 		sync_inspector_ui(obj)
 		queue_redraw()
@@ -56,6 +72,7 @@ func add_to_selection(object):
 		selected_objects.append(object)
 		object.select_object()
 		selected_object = object
+		handle_angle = object.global_rotation
 		sync_inspector_ui(object)
 		right_tabs.current_tab = 1
 
@@ -166,7 +183,7 @@ func on_static_toggled(toggled_on: bool):
 			selected_object.freeze = true
 
 func handle_position(obj):
-	return obj.global_position + Vector2(obj.get_size_px(), 0).rotated(obj.global_rotation)
+	return obj.global_position + Vector2(obj.get_size_px(), 0).rotated(handle_angle)
 
 func _selected_circle():
 	var obj = selected_object
@@ -176,8 +193,39 @@ func _selected_circle():
 
 func try_grab_handle(pos) -> bool:
 	var obj = _selected_circle()
-	var norm_grab = 12.0 / camera.zoom.x
-	if obj and pos.distance_to(handle_position(obj)) <= 12:
-		object_editing = true
-		return true
+	if obj:
+		var cam = get_viewport().get_camera_2d()
+		var zoom_level = cam.zoom.x if cam else 1.0
+		
+		# Зона захвата должна быть больше самой ручки (например, 12 пикселей на экране)
+		var grab_radius = 12.0 / zoom_level
+		
+		if pos.distance_to(handle_position(obj)) <= grab_radius:
+			object_editing = true
+			return true
 	return false
+
+func draw_cad_handle(pos: Vector2, screen_half: float):
+	var z = camera.zoom.x if camera else 1.0
+	var half = screen_half / z
+	var halo = 1.5 / z
+	# Точки ромба: верх, право, низ, лево
+	var points = PackedVector2Array([
+		pos + Vector2(0, -half),
+		pos + Vector2(half, 0),
+		pos + Vector2(0, half),
+		pos + Vector2(-half, 0),
+	])
+	var halo_points = PackedVector2Array([
+		pos + Vector2(0, -(half + halo)),
+		pos + Vector2(half + halo, 0),
+		pos + Vector2(0, half + halo),
+		pos + Vector2(-(half + halo), 0),
+	])
+	#  кайма
+	draw_colored_polygon(halo_points, Color.DARK_GRAY)
+	#  ядро
+	draw_colored_polygon(points, Color(0.15, 0.55, 1.0))
+
+func release_handle():
+	object_editing = false

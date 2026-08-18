@@ -22,6 +22,9 @@ func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var mouse_pos = get_parent().get_global_mouse_position()
 		
+		if selection.try_grab_handle(mouse_pos):
+			return
+		
 		var query = PhysicsPointQueryParameters2D.new()
 		query.position = mouse_pos
 		var space_state = get_parent().get_world_2d().direct_space_state
@@ -52,8 +55,6 @@ func _unhandled_input(event):
 					break
 		
 		if not found_link:
-			if selection.try_grab_handle(mouse_pos):
-				return
 			if links.selected_link != null or selection.selected_objects.size() != 0:
 				links.deselect_link()
 				selection.deselect_all_objects()
@@ -66,6 +67,7 @@ func _unhandled_input(event):
 	
 	elif event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		stop_grab()
+		selection.release_handle()
 	
 	if event.is_action_pressed("delete_all"):
 		delete_all_objects()

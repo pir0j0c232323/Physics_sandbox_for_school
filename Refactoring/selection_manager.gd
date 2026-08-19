@@ -17,10 +17,16 @@ var size_tween: Tween = null
 
 var _snap: Array = []
 
+var poly_channel: int = 0      # 0 = угол, 1 = левое ребро, 2 = правое ребро
+var poly_tween: Tween = null
+
+var locked_angle: float = -1.0   # -1 = нет замка
+
 var grabbed_axis: String = ""  
 var active_axis: String = ""    
 var grabbed_index: int = -1   # какую вершину полигона держим
 var grabbed_sign: int = 1
+var grab_offset: Vector2 = Vector2.ZERO
 
 @onready var camera = $"../Camera2D"
 @onready var drawer = $"../Shape_drawer"
@@ -31,6 +37,9 @@ var grabbed_sign: int = 1
 @onready var Color_picedbuton_object = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/ColorPickerButton
 @onready var Static_CheckBox = $/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Static_CheckBox
 @onready var Height_SpinBox = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Height_SpinBox"
+@onready var Angle_SpinBox = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Angle_SpinBox"
+@onready var LeftEdge_SpinBox = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/LeftEdge_SpinBox"
+@onready var RightEdge_SpinBox = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/RightEdge_SpinBox"
 @onready var Height_Label =$"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Label5"
 @onready var Size_Label = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/Label2"
 
@@ -46,6 +55,22 @@ func _ready():
 		Static_CheckBox.toggled.connect(on_static_toggled)
 	if Height_SpinBox:
 		Height_SpinBox.value_changed.connect(on_height_changed)
+	for sb in [Angle_SpinBox, LeftEdge_SpinBox, RightEdge_SpinBox]:
+		if sb:
+			sb.visible = false
+	if Angle_SpinBox:
+		Angle_SpinBox.min_value = 1.0
+		Angle_SpinBox.max_value = 179.0
+		Angle_SpinBox.step = 0.1
+		Angle_SpinBox.value_changed.connect(on_poly_angle_changed)
+	if LeftEdge_SpinBox:
+		LeftEdge_SpinBox.min_value = 5.0
+		LeftEdge_SpinBox.max_value = 9999.0
+		LeftEdge_SpinBox.value_changed.connect(on_poly_left_changed)
+	if RightEdge_SpinBox:
+		RightEdge_SpinBox.min_value = 5.0
+		RightEdge_SpinBox.max_value = 9999.0
+		RightEdge_SpinBox.value_changed.connect(on_poly_right_changed)
 
 func _draw():
 	if drawer.is_active() or sim.state != "EDIT":
@@ -74,7 +99,7 @@ func _draw_circle_overlay(obj, zoom_level: float):
 		var label = typed_text if typed_text != "" else "%.2f" % obj.get_size_px()
 		var outward = (show_pos - obj.global_position).normalized()
 		var label_pos = show_pos + outward * (18.0 / zoom_level)
-		draw_string(ThemeDB.fallback_font, label_pos, label, HORIZONTAL_ALIGNMENT_CENTER, -1, int(12.0 / zoom_level), Color.DARK_GRAY)
+		draw_label(label_pos, label, zoom_level)
 	
 	draw_cad_handle(pos, 4.5)
 
@@ -100,22 +125,47 @@ func _draw_rect_overlay(rect, zoom_level: float):
 		var value = s.x if axis == "W" else s.y
 		var label = axis + " " + (typed_text if typed_text != "" else "%.2f" % value)
 		var outward = (Vector2(1, 0) if axis == "W" else Vector2(0, 1)).rotated(rect.global_rotation)
-		draw_string(ThemeDB.fallback_font, b + outward * (18.0 / zoom_level), label, HORIZONTAL_ALIGNMENT_CENTER, -1, int(12.0 / zoom_level), info_color)
+		draw_label(b + outward * (18.0 / zoom_level), label, zoom_level)
 
 func _draw_poly_overlay(poly, zoom_level: float):
 	for i in range(poly.get_points_count()):
 		draw_cad_handle(poly.get_point_world(i), 4.5, object_editing and grabbed_index == i)
 	
-	# живой угол у вершины, которую тянем
-	if object_editing and grabbed_index >= 0 and grabbed_index < poly.get_points_count():
+	# табло: угол в вершине + длины двух рёбер, которые сейчас меняются
+	if grabbed_index >= 0 and grabbed_index < poly.get_points_count():
 		var n = poly.get_points_count()
 		var i = grabbed_index
+		var prev_i = (i - 1 + n) % n
+		var next_i = (i + 1) % n
+		var show = [i, prev_i, next_i]
+		
+		for k in show:
+			var vk = poly.get_point_world(k)
+			var pk = poly.get_point_world((k - 1 + n) % n)
+			var nk = poly.get_point_world((k + 1) % n)
+			var degk = abs(rad_to_deg((pk - vk).angle_to(nk - vk)))
+			var outk = (vk - poly.global_position).normalized()
+			var base = 11.0
+			var text = "%.1f°" % degk
+			if k == i:
+				base = 15.0 if poly_channel == 0 else 12.0
+				if poly_channel == 0 and typed_text != "":
+					text = typed_text
+			var col = Color(1.0, 0.75, 0.2) if locked_angle >= 0.0 else info_color
+			draw_label(vk + outk * (18.0 / zoom_level), text, zoom_level, base, col)
+		
 		var v = poly.get_point_world(i)
-		var prev = poly.get_point_world((i - 1 + n) % n)
-		var next = poly.get_point_world((i + 1) % n)
-		var deg = abs(rad_to_deg((prev - v).angle_to(next - v)))
-		var outward = (v - poly.global_position).normalized()
-		draw_string(ThemeDB.fallback_font, v + outward * (18.0 / zoom_level), "%.1f°" % deg, HORIZONTAL_ALIGNMENT_CENTER, -1, int(12.0 / zoom_level), info_color)
+		_draw_edge_label(poly.global_position, v, poly.get_point_world(prev_i), zoom_level, 13.0 if poly_channel == 1 else 11.0, typed_text if poly_channel == 1 and typed_text != "" else "")
+		_draw_edge_label(poly.global_position, v, poly.get_point_world(next_i), zoom_level, 13.0 if poly_channel == 2 else 11.0, typed_text if poly_channel == 2 and typed_text != "" else "")
+
+func draw_label(pos: Vector2, text: String, zoom_level: float, base_size: float = 13.0, color: Color = info_color):
+	const RASTER = 64.0   # всегда растеризуем крупно — даунскейл хрустит
+	var s = (base_size / zoom_level) / RASTER
+	var font = ThemeDB.fallback_font
+	draw_set_transform(pos, 0.0, Vector2(s, s))
+	draw_string_outline(font, Vector2.ZERO, text, HORIZONTAL_ALIGNMENT_CENTER, -1, RASTER, RASTER / 3 + 1, Color(0, 0, 0, 0.9))
+	draw_string(font, Vector2.ZERO, text, HORIZONTAL_ALIGNMENT_CENTER, -1, RASTER, color)   # info_color
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)  
 
 func _process(delta):
 	if object_editing:
@@ -124,17 +174,19 @@ func _process(delta):
 			grabbed_axis = ""
 			queue_redraw()
 			return
+		locked_angle = -1.0
 		var mouse = get_global_mouse_position()
+		var target = mouse + grab_offset   # ← мышь + куда схватили
 		var circ = _selected_circle()
 		if circ:
-			handle_angle = (mouse - circ.global_position).angle()
-			circ.set_size_px(mouse.distance_to(circ.global_position))
+			handle_angle = (target - circ.global_position).angle()
+			circ.set_size_px(target.distance_to(circ.global_position))
 			sync_inspector_ui(circ)
 			queue_redraw()
 			return
 		var rect = _selected_rect()
 		if rect:
-			var local = rect.to_local(mouse)
+			var local = rect.to_local(target) 
 			var s = rect.get_size_px()
 			if grabbed_axis == "W":
 				var fixed = -grabbed_sign * s.x / 2.0
@@ -151,7 +203,8 @@ func _process(delta):
 			return
 		var poly = _selected_poly()
 		if poly and grabbed_index >= 0:
-			poly.set_point_world(grabbed_index, mouse)
+			poly.set_point_world(grabbed_index, target)
+			_sync_poly_ui(poly)
 			queue_redraw()
 			return
 
@@ -173,7 +226,7 @@ func _process(delta):
 func _unhandled_input(event: InputEvent):
 	if drawer.is_active() or sim.state != "EDIT":
 		return
-	if not _selected_circle() and not _selected_rect():
+	if not _selected_circle() and not _selected_rect() and not _selected_poly():
 		return
 	if event is InputEventKey and event.pressed:
 		var c = event.unicode
@@ -193,6 +246,7 @@ func _unhandled_input(event: InputEvent):
 		elif event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
 			var circ = _selected_circle()
 			var rect = _selected_rect()
+			var poly = _selected_poly()
 			if typed_text.is_valid_float():
 				var v = max(1.0, typed_text.to_float())
 				if circ:
@@ -206,6 +260,8 @@ func _unhandled_input(event: InputEvent):
 					elif axis == "H":
 						rect.set_size_px(s.x, v)
 					sync_inspector_ui(rect)
+				elif _poly_active():
+					_apply_poly_channel(poly_channel, typed_text.to_float())
 			typed_text = ""
 			typed_armed = true
 			queue_redraw()
@@ -220,7 +276,16 @@ func _unhandled_input(event: InputEvent):
 		elif event.keycode == KEY_ESCAPE:
 			typed_text = ""
 			typed_armed = true
+			locked_angle = -1.0
 			queue_redraw()
+
+func _input(event: InputEvent):
+	if event is InputEventKey and event.pressed and _poly_active():
+		if event.keycode == KEY_DOWN or event.keycode == KEY_UP:
+			poly_channel = (poly_channel + (1 if event.keycode == KEY_DOWN else 2)) % 3
+			typed_armed = true
+			queue_redraw()
+			get_viewport().set_input_as_handled()   # интерфейсу не достаётся
 
 func _apply_typed():
 	queue_redraw()
@@ -238,12 +303,15 @@ func add_to_selection(object):
 		active_axis = "W" if _selected_rect() else ""
 		grabbed_axis = ""
 		grabbed_index = -1
+		locked_angle = -1.0
+		_poly_ui_visible(false)
 
 func deselect_single_object(object):
 	if object in selected_objects:
 		object.deselect_object()
 		selected_objects.erase(object)
 		typed_text = ""
+		locked_angle = -1.0
 		if selected_object == object:
 			selected_object = selected_objects.back() if selected_objects.size() > 0 else null
 
@@ -256,6 +324,8 @@ func deselect_all_objects():
 	reset_inspector_ui()
 	right_tabs.current_tab = 0
 	typed_text = ""
+	locked_angle = -1.0
+	_poly_ui_visible(false)
 
 func sync_inspector_ui(object):
 	Mass_SpinBox.set_block_signals(true)
@@ -371,6 +441,8 @@ func try_grab_handle(pos) -> bool:
 		typed_text = ""
 		typed_armed = true
 		grabbed_axis = ""
+		poly_channel = 0  
+		grab_offset = handle_position(circ) - pos
 		object_editing = true
 		return true
 	
@@ -384,6 +456,7 @@ func try_grab_handle(pos) -> bool:
 				active_axis = h["axis"]
 				grabbed_axis = h["axis"]
 				grabbed_sign = h["sign"]
+				grab_offset = h["pos"] - pos 
 				object_editing = true
 				return true
 	var poly = _selected_poly()
@@ -392,8 +465,12 @@ func try_grab_handle(pos) -> bool:
 			if pos.distance_to(poly.get_point_world(i)) <= grab_radius:
 				typed_text = ""
 				typed_armed = true
+				locked_angle = -1.0
 				grabbed_index = i
+				grab_offset = poly.get_point_world(i) - pos
 				object_editing = true
+				_poly_ui_visible(true)   # показать спинбоксы
+				_sync_poly_ui(poly)      # заполнить текущими значениями
 				return true
 	return false
 
@@ -419,11 +496,13 @@ func draw_cad_handle(pos: Vector2, screen_half: float, active: bool = false):
 
 func release_handle():
 	if grabbed_axis != "":
-		active_axis = grabbed_axis   # запоминаем, что редактировали последним
+		active_axis = grabbed_axis
+	if poly_tween: poly_tween.kill()
 	object_editing = false
 	grabbed_axis = ""
 	grabbed_sign = 1
-	grabbed_index = -1
+	grab_offset = Vector2.ZERO
+	queue_redraw()
 
 func animate_size(obj):
 	nach = obj.get_size_px()               # текущий размер (даже посреди анимации!)
@@ -475,3 +554,140 @@ func _selected_poly():
 	if obj and is_instance_valid(obj) and obj.has_method("get_point_world"):
 		return obj
 	return null
+
+func _draw_edge_label(center: Vector2, a: Vector2, b: Vector2, zoom_level: float, base_size: float = 12.0, override_text: String = ""):
+	var mid = (a + b) / 2.0
+	var dir = (b - a).normalized()
+	var perp = Vector2(-dir.y, dir.x)
+	if perp.dot(center - mid) > 0:
+		perp = -perp
+	var text = override_text if override_text != "" else "%.2f" % a.distance_to(b)
+	draw_label(mid + perp * (16.0 / zoom_level), text, zoom_level, base_size)
+
+func _poly_editing() -> bool:
+	return object_editing and grabbed_index >= 0 and _selected_poly() != null
+
+func _animate_poly_vertex(poly, i: int, target: Vector2):
+	if poly_tween: poly_tween.kill()
+	var from = poly.get_point_world(i)
+	var delta = (target - from).length()
+	var duration = clamp(0.4 - delta / 4000.0, 0.15, 0.4)
+	poly_tween = create_tween()
+	poly_tween.set_trans(Tween.TRANS_CUBIC)
+	poly_tween.set_ease(Tween.EASE_OUT)
+	poly_tween.tween_method(_set_poly_point.bind(poly, i), from, target, duration)
+
+func _set_poly_point(p: Vector2, poly, i: int):
+	if is_instance_valid(poly):
+		poly.set_point_world(i, p)
+		_sync_poly_ui(poly) 
+	queue_redraw()
+
+func _poly_active() -> bool:
+	return grabbed_index >= 0 and _selected_poly() != null
+
+func _poly_target_for_channel(poly, i: int, channel: int, value: float) -> Vector2:
+	var n = poly.get_points_count()
+	var v = poly.get_point_world(i)
+	var prev = poly.get_point_world((i - 1 + n) % n)
+	var next = poly.get_point_world((i + 1) % n)
+	if channel == 1:
+		if locked_angle < 0.0:
+			return prev + (v - prev).normalized() * value
+		return _with_angle_lock(prev, value, v, prev, next)
+	if channel == 2:
+		if locked_angle < 0.0:
+			return next + (v - next).normalized() * value
+		return _with_angle_lock(next, value, v, prev, next)
+	# канал 0 — угол (старая математика дуги)
+	var chord = (next - prev).length()
+	var a = deg_to_rad(clamp(value, 1.0, 179.0))
+	var R = chord / (2.0 * sin(a))
+	var mid = (prev + next) / 2.0
+	var h = sqrt(max(0.0, R * R - chord * chord / 4.0))
+	var dir_chord = (next - prev).normalized()
+	var perp = Vector2(-dir_chord.y, dir_chord.x)
+	var side = sign((v - prev).cross(next - prev))
+	var center_side = side if value < 90.0 else -side
+	var O = mid + perp * center_side * h
+	return O + (v - O).normalized() * R
+# пересечение «окружность длины» и «дуга залоченного угла»
+func _with_angle_lock(fixed_neighbor: Vector2, length: float, v: Vector2, prev: Vector2, next: Vector2) -> Vector2:
+	var chord = (next - prev).length()
+	var a = deg_to_rad(clamp(locked_angle, 1.0, 179.0))
+	var R = chord / (2.0 * sin(a))
+	var mid = (prev + next) / 2.0
+	var h0 = sqrt(max(0.0, R * R - chord * chord / 4.0))
+	var dir_chord = (next - prev).normalized()
+	var perp = Vector2(-dir_chord.y, dir_chord.x)
+	var side = sign((v - prev).cross(next - prev))
+	var center_side = side if locked_angle < 90.0 else -side
+	var O = mid + perp * center_side * h0
+	var d_vec = O - fixed_neighbor
+	var d = d_vec.length()
+	if d > length + R or d < abs(length - R) or d < 0.0001:
+		return v   # длина и угол несовместимы — стоим на месте
+	var aa = (length * length - R * R + d * d) / (2.0 * d)
+	var hh = sqrt(max(0.0, length * length - aa * aa))
+	var p2 = fixed_neighbor + d_vec.normalized() * aa
+	var pn = Vector2(-d_vec.y, d_vec.x).normalized()
+	var s1 = p2 + pn * hh
+	var s2 = p2 - pn * hh
+	return s1 if s1.distance_to(v) < s2.distance_to(v) else s2
+
+func on_poly_angle_changed(v): _apply_poly_channel(0, v)
+func on_poly_left_changed(v): _apply_poly_channel(1, v)
+func on_poly_right_changed(v): _apply_poly_channel(2, v)
+
+func _apply_poly_channel(channel: int, value: float):
+	var poly = _selected_poly()
+	if not _poly_active():
+		return
+	if channel == 0:
+		value = clamp(value, 1.0, 179.0)
+	else:
+		value = max(5.0, value)
+	var target = _poly_target_for_channel(poly, grabbed_index, channel, value)
+	if target.distance_to(poly.get_point_world(grabbed_index)) < 0.001 and locked_angle >= 0.0 and channel != 0:
+		print("⚠️ Такая длина несовместима с углом ", locked_angle)
+	elif poly.can_move_point(grabbed_index, target):
+		if channel == 0:
+			locked_angle = value
+		object_editing = false
+		_animate_poly_vertex(poly, grabbed_index, target)
+	else:
+		print("⚠️ Так полигон завяжется")
+
+func _sync_poly_ui(poly):
+	if not poly or grabbed_index < 0 or grabbed_index >= poly.get_points_count():
+		return
+	var n = poly.get_points_count()
+	var i = grabbed_index
+	var v = poly.get_point_world(i)
+	var prev = poly.get_point_world((i - 1 + n) % n)
+	var next = poly.get_point_world((i + 1) % n)
+	for sb in [Angle_SpinBox, LeftEdge_SpinBox, RightEdge_SpinBox]:
+		if sb: sb.set_block_signals(true)
+	if Angle_SpinBox:
+		Angle_SpinBox.value = abs(rad_to_deg((prev - v).angle_to(next - v)))
+	if LeftEdge_SpinBox:
+		LeftEdge_SpinBox.value = v.distance_to(prev)
+	if RightEdge_SpinBox:
+		RightEdge_SpinBox.value = v.distance_to(next)
+	for sb in [Angle_SpinBox, LeftEdge_SpinBox, RightEdge_SpinBox]:
+		if sb: sb.set_block_signals(false)
+
+func _poly_ui_visible(show: bool):
+	for sb in [Angle_SpinBox, LeftEdge_SpinBox, RightEdge_SpinBox]:
+		if sb: sb.visible = show
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

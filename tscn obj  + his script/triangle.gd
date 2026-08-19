@@ -39,16 +39,17 @@ func _outline_add() -> float:
 
 func refresh_outline():
 	if selection_outline == null:
-		print("RECT: обводка ещё не создана!")
 		return
-	var add = _outline_add()
-	selection_outline.scale = Vector2($Polygon2D.scale.x + add, $Polygon2D.scale.y + add)
+	selection_outline.points = _outline_points()
 	if DEBUG_OUTLINE:
-		if is_static:
-			selection_outline.modulate = Color.RED # Если статичный - красная обводка
-		else:
-			selection_outline.modulate = Color(1, 1, 0) # Если обычный - желтая обводка
-		#print("RECT base=", _base_size(), " add=", add, " scale=", $Polygon2D.scale)
+		selection_outline.default_color = Color.RED if is_static else Color(0, 0, 0)
+
+func _outline_points() -> PackedVector2Array:
+	var s = $Polygon2D.scale
+	var res = PackedVector2Array()
+	for p in $Polygon2D.polygon:
+		res.append(p * s)
+	return res
 
 func update_size():
 	$Polygon2D.scale = Vector2(custom_scale, custom_scale)
@@ -71,12 +72,13 @@ func select_object():
 	$Polygon2D.modulate = temp_color
 
 	# 2. Обводка
-	var outline = Polygon2D.new()
-	outline.polygon = $Polygon2D.polygon
-	outline.position = Vector2(0, 0)
+	var outline = Line2D.new()
+	outline.closed = true
+	outline.width = OUTLINE_WIDTH 
+	outline.joint_mode = Line2D.LINE_JOINT_ROUND
+	outline.points = _outline_points()
 	outline.name = "SelectionOutline"
 	add_child(outline)
-	move_child(outline, 0)
 	selection_outline = outline
 
 	# 3. Пересчёт в конце
@@ -102,7 +104,8 @@ func get_point_world(i: int) -> Vector2:
 
 func set_point_world(i: int, world_pos: Vector2):
 	var local = to_local(world_pos) / $Polygon2D.scale
-	# ⚠️ ГОДОТ-ЛОВУШКА: polygon возвращает КОПИЮ, правим через переменную
+	if _would_self_intersect(i, local):
+		return
 	var pts = $Polygon2D.polygon
 	pts[i] = local
 	$Polygon2D.polygon = pts
@@ -112,3 +115,34 @@ func set_point_world(i: int, world_pos: Vector2):
 		cp[i] = local
 		col.polygon = cp
 	refresh_outline()
+
+func _would_self_intersect(i: int, new_p: Vector2) -> bool:
+	var pts = $Polygon2D.polygon
+	var n = pts.size()
+	if n < 4:
+		return false
+	var prev_i = (i - 1 + n) % n
+	var next_i = (i + 1) % n
+	var prev = pts[prev_i]
+	var next = pts[next_i]
+	for j in range(n):
+		var j2 = (j + 1) % n
+		# ребро (prev → new): не проверяем против рёбер, касающихся prev или i
+		if j != i and j2 != i and j != prev_i and j2 != prev_i:
+			if _seg_cross(prev, new_p, pts[j], pts[j2]):
+				return true
+		# ребро (new → next): не проверяем против рёбер, касающихся next или i
+		if j != i and j2 != i and j != next_i and j2 != next_i:
+			if _seg_cross(new_p, next, pts[j], pts[j2]):
+				return true
+	return false
+
+func _seg_cross(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> bool:
+	var o1 = sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+	var o2 = sign((b.x - a.x) * (d.y - a.y) - (b.y - a.y) * (d.x - a.x))
+	var o3 = sign((d.x - c.x) * (a.y - c.y) - (d.y - c.y) * (a.x - c.x))
+	var o4 = sign((d.x - c.x) * (b.y - c.y) - (d.y - c.y) * (b.x - c.x))
+	return o1 != o2 and o3 != o4
+
+func can_move_point(i: int, world_pos: Vector2) -> bool:
+	return not _would_self_intersect(i, to_local(world_pos) / $Polygon2D.scale)

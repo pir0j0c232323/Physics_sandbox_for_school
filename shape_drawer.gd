@@ -60,7 +60,8 @@ func _process(delta: float):
 		if is_adjusting:
 			typed_text = "" 
 			if draw_tool == 2:
-				poly_points[adjust_index] = get_global_mouse_position()
+				if not _would_tangle(poly_points, adjust_index, get_global_mouse_position()):
+					poly_points[adjust_index] = get_global_mouse_position()
 			else:
 				current_point = get_global_mouse_position()
 		queue_redraw()
@@ -78,7 +79,8 @@ func _unhandled_input(event: InputEvent):
 			if is_magnet():
 				close_polygon()
 			elif get_global_mouse_position().distance_to(poly_points[poly_points.size() - 1]) > 3:
-				poly_points.append(get_global_mouse_position())
+				if not _new_seg_crosses(poly_points, get_global_mouse_position()):
+					poly_points.append(get_global_mouse_position())
 			
 		if event.pressed and state == State.ADJUST:
 			if draw_tool == 2:
@@ -244,11 +246,6 @@ func stop_breathing():
 		breath_tween = null
 	breath = 0.0
 
-func close_polygon():
-	state = State.ADJUST
-	start_breathing()
-	print("🔒 Контур замкнут")
-
 func is_magnet() -> bool:
 	if poly_points.size() < 3:
 		return false
@@ -302,3 +299,53 @@ func _apply_typed_radius():
 			dir = Vector2.RIGHT
 		current_point = first_point + dir * max(1.0, typed_text.to_float())
 	queue_redraw()
+
+func _seg_cross(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> bool:
+	var o1 = sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+	var o2 = sign((b.x - a.x) * (d.y - a.y) - (b.y - a.y) * (d.x - a.x))
+	var o3 = sign((d.x - c.x) * (a.y - c.y) - (d.y - c.y) * (a.x - c.x))
+	var o4 = sign((d.x - c.x) * (b.y - c.y) - (d.y - c.y) * (b.x - c.x))
+	return o1 != o2 and o3 != o4
+
+# не завяжется ли замкнутый контур, если вершину i поставить в new_p
+func _would_tangle(points: PackedVector2Array, i: int, new_p: Vector2) -> bool:
+	var n = points.size()
+	if n < 4:
+		return false
+	var prev_i = (i - 1 + n) % n
+	var next_i = (i + 1) % n
+	var prev = points[prev_i]
+	var next = points[next_i]
+	for j in range(n):
+		var j2 = (j + 1) % n
+		if j != i and j2 != i and j != prev_i and j2 != prev_i:
+			if _seg_cross(prev, new_p, points[j], points[j2]):
+				return true
+		if j != i and j2 != i and j != next_i and j2 != next_i:
+			if _seg_cross(new_p, next, points[j], points[j2]):
+				return true
+	return false
+
+# не пересечёт ли новое ребро (последняя точка → new_p) уже нарисованную цепь
+func _new_seg_crosses(points: PackedVector2Array, new_p: Vector2) -> bool:
+	var last = points[points.size() - 1]
+	for j in range(points.size() - 2):
+		if _seg_cross(last, new_p, points[j], points[j + 1]):
+			return true
+	return false
+
+# не завяжется ли при замыкании контура
+func _closing_crosses(points: PackedVector2Array) -> bool:
+	var n = points.size()
+	for j in range(1, n - 2):
+		if _seg_cross(points[n - 1], points[0], points[j], points[j + 1]):
+			return true
+	return false
+
+func close_polygon():
+	if _closing_crosses(poly_points):
+		print("⚠️ Нельзя замкнуть: контур завяжется")
+		return
+	state = State.ADJUST
+	start_breathing()
+	print("🔒 Контур замкнут")

@@ -234,6 +234,37 @@ layout_mode = 2
 max_value = 1000.0
 step = 0.1
 
+[node name="Label6" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1523718511]
+layout_mode = 2
+text = "УГОЛ °"
+
+[node name="Angle_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1530213824]
+layout_mode = 2
+max_value = 360.0
+step = 0.1
+
+[node name="Label7" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=150301680]
+layout_mode = 2
+text = "ЛЕВАЯ СТОРОНА"
+
+[node name="LeftEdge_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1164146894]
+layout_mode = 2
+min_value = 0.01
+max_value = 1000.0
+step = 0.01
+value = 0.01
+
+[node name="Label8" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=2052769210]
+layout_mode = 2
+text = "ПРАВАЯ СТОРОНА"
+
+[node name="RightEdge_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=1594825382]
+layout_mode = 2
+min_value = 0.01
+max_value = 1000.0
+step = 0.01
+value = 0.01
+
 [node name="Label3" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object" unique_id=911530577]
 layout_mode = 2
 text = "ЦВЕТ"

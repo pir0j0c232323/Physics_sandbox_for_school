@@ -680,8 +680,65 @@ func _sync_poly_ui(poly):
 func _poly_ui_visible(show: bool):
 	for sb in [Angle_SpinBox, LeftEdge_SpinBox, RightEdge_SpinBox]:
 		if sb: sb.visible = show
-	
-	
+
+func try_delete_vertex(pos) -> bool:
+	var poly = _selected_poly()
+	if not poly:
+		return false
+	var cam = get_viewport().get_camera_2d()
+	var z = cam.zoom.x if cam else 1.0
+	var best = -1
+	var best_d = 12.0 / z
+	for i in range(poly.get_points_count()):
+		var d = pos.distance_to(poly.get_point_world(i))
+		if d <= best_d:
+			best_d = d
+			best = i
+	if best < 0:
+		return false
+	if poly.get_points_count() <= 3:
+		print("⚠️ Минимум три вершины")
+		return true
+	if not poly.can_remove_point(best):
+		print("⚠️ Нельзя удалить: полигон завяжется")
+		return true
+	poly.remove_point(best)
+	if grabbed_index >= 0:
+		if best == grabbed_index:
+			grabbed_index = -1
+		elif best < grabbed_index:
+			grabbed_index -= 1
+	locked_angle = -1.0
+	_sync_poly_ui(poly)
+	queue_redraw()
+	return true
+
+func try_add_vertex(pos) -> bool:
+	var poly = _selected_poly()
+	if not poly:
+		return false
+	var cam = get_viewport().get_camera_2d()
+	var z = cam.zoom.x if cam else 1.0
+	var best = -1
+	var best_d = 8.0 / z
+	var n = poly.get_points_count()
+	for j in range(n):
+		var a = poly.get_point_world(j)
+		var b = poly.get_point_world((j + 1) % n)
+		var closest = Geometry2D.get_closest_point_to_segment_uncapped(pos, a, b)
+		var d = pos.distance_to(closest)
+		if d <= best_d:
+			best_d = d
+			best = j
+	if best < 0:
+		return false
+	poly.add_point_at(pos, best)
+	grabbed_index = best + 1   # новая вершина сразу активна
+	locked_angle = -1.0
+	_poly_ui_visible(true)
+	_sync_poly_ui(poly)
+	queue_redraw()
+	return true
 	
 	
 	

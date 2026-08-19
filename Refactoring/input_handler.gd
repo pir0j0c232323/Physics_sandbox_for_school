@@ -22,6 +22,11 @@ func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var mouse_pos = get_parent().get_global_mouse_position()
 		
+		if event.double_click:
+			if selection.try_delete_vertex(mouse_pos):
+				return
+			if selection.try_add_vertex(mouse_pos):
+				return
 		if selection.try_grab_handle(mouse_pos):
 			return
 		

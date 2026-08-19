@@ -146,3 +146,42 @@ func _seg_cross(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> bool:
 
 func can_move_point(i: int, world_pos: Vector2) -> bool:
 	return not _would_self_intersect(i, to_local(world_pos) / $Polygon2D.scale)
+
+func add_point_at(world_pos: Vector2, edge_index: int):
+	var local = to_local(world_pos) / $Polygon2D.scale
+	var pts = $Polygon2D.polygon
+	pts.insert(edge_index + 1, local)
+	$Polygon2D.polygon = pts
+	var col = get_node_or_null("CollisionPolygon2D")
+	if col:
+		var cp = col.polygon
+		cp.insert(edge_index + 1, local)
+		col.polygon = cp
+	refresh_outline()
+
+func remove_point(i: int):
+	var pts = $Polygon2D.polygon
+	pts.remove_at(i)
+	$Polygon2D.polygon = pts
+	var col = get_node_or_null("CollisionPolygon2D")
+	if col:
+		var cp = col.polygon
+		cp.remove_at(i)
+		col.polygon = cp
+	refresh_outline()
+
+func can_remove_point(i: int) -> bool:
+	var pts = $Polygon2D.polygon
+	var n = pts.size()
+	var prev_i = (i - 1 + n) % n
+	var next_i = (i + 1) % n
+	var a = pts[prev_i]
+	var b = pts[next_i]
+	for j in range(n):
+		var j2 = (j + 1) % n
+		# пропускаем рёбра, которых коснётся удаление
+		if j == i or j2 == i or j == prev_i or j2 == prev_i or j == next_i or j2 == next_i:
+			continue
+		if _seg_cross(a, b, pts[j], pts[j2]):
+			return false
+	return true

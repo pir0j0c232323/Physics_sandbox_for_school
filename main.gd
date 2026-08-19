@@ -10,3 +10,8 @@ extends Node2D
 
 func _ready():
 	print("🧩 Модули загружены: ", sim.name, spawner.name, selection.name, links.name, input_handler.name, ui.name)
+	# Приказываем окну занять максимальный размер экрана монитора
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MAXIMIZED)
+	
+	# Дополнительно расширяем область видимости на весь экран системы
+	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS

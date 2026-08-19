@@ -74,6 +74,14 @@ layout_mode = 2
 layout_mode = 2
 text = "☰"
 
+[node name="back to menu" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/MenuButton" unique_id=1744361169]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 37.0
+offset_right = 156.0
+offset_bottom = 68.0
+text = "вернуться в меню"
+
 [node name="ToolsContainer" type="Control" parent="CanvasLayer/VBoxContainer/HBoxContainer" unique_id=2018697836]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -187,9 +195,10 @@ layout_mode = 2
 
 [node name="TabContainer" type="TabContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel" unique_id=238483611]
 layout_mode = 2
-current_tab = 0
+current_tab = 1
 
 [node name="World" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=1314560991]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -199,7 +208,6 @@ theme_override_fonts/font = SubResource("FontFile_1n5va")
 text = "ГРАВИТАЦИЯ ВЫКЛ"
 
 [node name="Object" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=212432274]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 

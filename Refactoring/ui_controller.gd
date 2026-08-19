@@ -1,6 +1,7 @@
 extends Node
 
 @onready var menu_button: MenuButton = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/MenuButton
+@onready var back_button = $"../CanvasLayer/VBoxContainer/HBoxContainer/MenuButton/back to menu"
 @onready var mechanics_panel = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel
 @onready var molecular_panel = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MolecularPanel
 @onready var electricity_panel = $/root/Main/CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/ElectricityPanel
@@ -14,6 +15,15 @@ func _ready():
 	if gravity_button:
 		gravity_button.toggled.connect(on_gravity_pressed)
 	_show_panel(0)
+	if back_button:
+		back_button.pressed.connect(_on_back_button_pressed)
+
+func _on_back_button_pressed():
+	# Возвращаем режим окна в "Оконный" перед выходом в меню
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	
+	# Загружаем меню
+	get_tree().change_scene_to_file("res://main_menu.tscn")
 
 func _on_menu_selected(id):
 	_show_panel(id)

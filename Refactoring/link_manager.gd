@@ -1,17 +1,30 @@
+
 extends Node
 
 var links_array = []
 var selected_link = null
 var bodies_collide = true
 
+# === ПЕРЕМЕННЫЕ ДЛЯ ИНСТРУМЕНТОВ И МАГНИТОВ ===
+enum ToolMode { NONE, SPRING, ROPE, MAGNET }
+var current_tool = ToolMode.NONE
+var first_object = null
+var first_anchor_local = Vector2.ZERO # Локальная точка первого объекта
+
+var preview_line: Line2D = null
+var magnet_crosshair: Node2D = null # Зеленый лазерный прицел для магнитов
+
+# Твои актуальные пути к элементам сверху
 @onready var selection = $"../SelectionManager"
-@onready var length_spin = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Length_SpinBox"
-@onready var stiffness_spin = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Stiffness_SpinBox"
-@onready var auto_length_check = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/AutoLength_CheckBox"
-@onready var nit_button = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Nit_Button"
-@onready var pruzina_button = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/Pruzina_Button2"
-@onready var colision_objects = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer/collision_object"
-@onready var label_collision_buton = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer/Длинна2"
+@onready var tab_container = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer"
+@onready var length_spin = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/Length_SpinBox"
+@onready var stiffness_spin = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/Stiffness_SpinBox"
+@onready var auto_length_check = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer/AutoLength_CheckBox"
+@onready var nit_button = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/NitButton"
+@onready var pruzina_button = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/PruzinaButton"
+@onready var magnet_button = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/MagnetButton"
+@onready var colision_objects = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer/collision_object"
+@onready var label_collision_buton = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer/Длинна2"
 
 func _ready():
 	if length_spin:
@@ -19,17 +32,87 @@ func _ready():
 	if stiffness_spin:
 		stiffness_spin.value_changed.connect(func(_val): update_selected_link())
 	if nit_button:
-		nit_button.pressed.connect(_on_nit_button_pressed)
+		nit_button.pressed.connect(func(): _select_tool(ToolMode.ROPE))
 	if pruzina_button:
-		pruzina_button.pressed.connect(_on_pruzina_button_pressed)
+		pruzina_button.pressed.connect(func(): _select_tool(ToolMode.SPRING))
+	if magnet_button:
+		magnet_button.pressed.connect(func(): _select_tool(ToolMode.MAGNET))
 	if colision_objects:
 		colision_objects.toggled.connect(on_collision_object_pressed)
+		
+	# Линия предпросмотра
+	preview_line = Line2D.new()
+	preview_line.width = 3.0
+	preview_line.z_index = 15
+	preview_line.default_color = Color(1.0, 1.0, 0.0, 0.6)
+	preview_line.visible = false
+	get_parent().call_deferred("add_child", preview_line)
+	
+	# Прицел для расстановки магнитов
+	magnet_crosshair = Node2D.new()
+	magnet_crosshair.z_index = 20
+	magnet_crosshair.draw.connect(_on_magnet_crosshair_draw)
+	get_parent().call_deferred("add_child", magnet_crosshair)
+
+func _process(_delta):
+	magnet_crosshair.queue_redraw()
+	magnet_crosshair.visible = (current_tool == ToolMode.MAGNET)
+	
+	var mouse_pos = preview_line.get_global_mouse_position()
+	var space_state = preview_line.get_world_2d().direct_space_state
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = mouse_pos
+	var result = space_state.intersect_point(query)
+
+	var target_snap_pos = mouse_pos
+	if result and (current_tool == ToolMode.SPRING or current_tool == ToolMode.ROPE):
+		target_snap_pos = get_snap_position(mouse_pos, result[0]["collider"])
+
+	# Если выбран первый объект и мы тянем связь
+	if first_object != null and is_instance_valid(first_object) and preview_line.visible:
+		var pos_a = first_object.to_global(first_anchor_local)
+		var pos_b = target_snap_pos
+		
+		if current_tool == ToolMode.SPRING:
+			update_spring_line(preview_line, pos_a, pos_b)
+		elif current_tool == ToolMode.ROPE:
+			if preview_line.get_point_count() != 2:
+				preview_line.clear_points()
+				preview_line.add_point(pos_a)
+				preview_line.add_point(pos_b)
+			else:
+				preview_line.set_point_position(0, pos_a)
+				preview_line.set_point_position(1, pos_b)
+
+func get_snap_position(mouse_pos: Vector2, body: Node2D) -> Vector2:
+	var best_pos = body.global_position
+	var best_dist = mouse_pos.distance_to(best_pos)
+	
+	for child in body.get_children():
+		if child.is_in_group("magnets"):
+			var dist = mouse_pos.distance_to(child.global_position)
+			if dist < best_dist:
+				best_dist = dist
+				best_pos = child.global_position
+				
+	if best_dist < 50.0:
+		return best_pos
+	return mouse_pos
+
+func _on_magnet_crosshair_draw():
+	if current_tool == ToolMode.MAGNET:
+		var p = magnet_crosshair.get_local_mouse_position()
+		# Лазерные линии-заглушки для точного выравнивания
+		magnet_crosshair.draw_line(Vector2(p.x - 2000, p.y), Vector2(p.x + 2000, p.y), Color(0, 1, 0, 0.4), 1.0)
+		magnet_crosshair.draw_line(Vector2(p.x, p.y - 2000), Vector2(p.x, p.y + 2000), Color(0, 1, 0, 0.4), 1.0)
+		magnet_crosshair.draw_circle(p, 5, Color.RED)
 
 func _physics_process(_delta):
 	for link in links_array:
 		if is_instance_valid(link["a"]) and is_instance_valid(link["b"]) and is_instance_valid(link["line"]):
-			var pos_a = link["a"].global_position
-			var pos_b = link["b"].global_position
+			var pos_a = link["a"].to_global(link["local_a"])
+			var pos_b = link["b"].to_global(link["local_b"])
+			
 			if link.get("is_spring", false):
 				update_spring_line(link["line"], pos_a, pos_b)
 			else:
@@ -40,11 +123,83 @@ func _physics_process(_delta):
 			if is_instance_valid(link["line"]): link["line"].queue_free()
 			if is_instance_valid(link.get("area")): link["area"].queue_free()
 
-func _on_pruzina_button_pressed():
-	try_create_connection(1)
+# === ЛОГИКА ИНСТРУМЕНТОВ И КЛИКОВ ===
 
-func _on_nit_button_pressed():
-	try_create_connection(2)
+func _select_tool(tool_mode: int):
+	current_tool = tool_mode
+	first_object = null
+	if preview_line:
+		preview_line.visible = false
+	print("🛠 Выбран инструмент: ", tool_mode)
+
+func _input(event):
+	if current_tool == ToolMode.NONE:
+		return
+		
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			_handle_left_click()
+			get_viewport().set_input_as_handled() 
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			_select_tool(ToolMode.NONE)
+			print("❌ Инструмент отменен")
+
+func _handle_left_click():
+	var mouse_pos = preview_line.get_global_mouse_position()
+	var space_state = preview_line.get_world_2d().direct_space_state
+	var query = PhysicsPointQueryParameters2D.new()
+	query.position = mouse_pos
+	var result = space_state.intersect_point(query)
+	
+	if result:
+		var clicked_object = result[0]["collider"]
+		
+		# Если выбран инструмент магнита — ставим магнит на объект
+		if current_tool == ToolMode.MAGNET:
+			create_magnet_on_body(clicked_object, mouse_pos)
+			return
+			
+		var snap_pos = get_snap_position(mouse_pos, clicked_object)
+		
+		# Первый клик связи
+		if first_object == null:
+			first_object = clicked_object
+			first_anchor_local = clicked_object.to_local(snap_pos)
+			preview_line.clear_points()
+			preview_line.add_point(snap_pos)
+			preview_line.add_point(mouse_pos)
+			preview_line.visible = true
+			
+		# Второй клик связи
+		elif first_object != clicked_object:
+			var link_type = 1 if current_tool == ToolMode.SPRING else 2
+			var second_anchor_local = clicked_object.to_local(snap_pos)
+			create_joint(first_object, clicked_object, link_type, first_anchor_local, second_anchor_local)
+			
+			_select_tool(ToolMode.NONE)
+			_open_connection_panel()
+
+func create_magnet_on_body(body: Node2D, global_pos: Vector2):
+	var magnet = Node2D.new()
+	magnet.add_to_group("magnets")
+	body.add_child(magnet)
+	magnet.global_position = global_pos
+	
+	magnet.draw.connect(func():
+		magnet.draw_circle(Vector2.ZERO, 6.0, Color.RED)
+		magnet.draw_arc(Vector2.ZERO, 10.0, 0, TAU, 16, Color.ORANGE, 2.0)
+	)
+	magnet.queue_redraw()
+	print("🧲 Установлен магнит на объекте: ", body.name)
+
+func _open_connection_panel():
+	if tab_container:
+		for i in range(tab_container.get_tab_count()):
+			if tab_container.get_tab_title(i) == "Связь" or tab_container.get_tab_title(i) == "СВЯЗЬ":
+				tab_container.current_tab = i
+				break
+
+# === СОЗДАНИЕ И УПРАВЛЕНИЕ СВЯЗЯМИ ===
 
 func on_collision_object_pressed(value):
 	if selected_link != null:
@@ -60,41 +215,34 @@ func update_collision_label(value):
 	else:
 		label_collision_buton.text = "КОЛЛИЗИЯ ТЕЛ ВЫКЛ"
 
-func try_create_connection(link_type: int):
-	if selection.selected_objects.size() < 2:
-		print("⚠️ Выделите как минимум 2 объекта (зажав Shift)!")
-		return
-	for i in range(selection.selected_objects.size() - 1):
-		create_joint(selection.selected_objects[i], selection.selected_objects[i + 1], link_type)
-
-func create_joint(object_a, object_b, link_type):
+func create_joint(object_a, object_b, link_type, local_a, local_b):
 	var joint = DampedSpringJoint2D.new()
 	var line = Line2D.new()
-	
 	var area = Area2D.new()
 	var collision = CollisionShape2D.new()
 	var shape = SegmentShape2D.new()
+	
+	var pos_a = object_a.to_global(local_a)
+	var pos_b = object_b.to_global(local_b)
 	
 	line.width = 3.0
 	line.z_index = 10
 	line.add_point(Vector2.ZERO)
 	line.add_point(Vector2.ZERO)
 	
-	shape.a = object_a.global_position
-	shape.b = object_b.global_position
+	shape.a = pos_a
+	shape.b = pos_b
 	collision.shape = shape
 	area.add_child(collision)
 	
-	get_parent().add_child(line)   # ВАЖНО: в Main!
-	get_parent().add_child(area)   # ВАЖНО: в Main!
+	get_parent().add_child(line) 
+	get_parent().add_child(area) 
 	
-	var dist = object_a.global_position.distance_to(object_b.global_position)
-	var final_length = dist
-	
+	var final_length = pos_a.distance_to(pos_b)
 	if not auto_length_check.button_pressed and length_spin:
 		final_length = length_spin.value
 	
-	joint.global_position = object_a.global_position
+	joint.global_position = pos_a
 	joint.length = final_length
 	joint.rest_length = final_length
 	
@@ -103,28 +251,29 @@ func create_joint(object_a, object_b, link_type):
 		joint.damping = 0.01
 		joint.disable_collision = not bodies_collide
 		line.default_color = Color.CYAN
-		print("🔗 Создана Пружина. Длина: ", final_length, ", жесткость: ", joint.stiffness)
 	elif link_type == 2:
 		joint.stiffness = 64.0
 		joint.damping = 2.0
 		joint.disable_collision = not bodies_collide
 		line.default_color = Color.WHITE
-		print("🔗 Создана Нить. Длина: ", final_length)
 	
-	get_parent().add_child(joint)  # ВАЖНО: в Main!
-	
+	get_parent().add_child(joint) 
 	joint.node_a = object_a.get_path()
 	joint.node_b = object_b.get_path()
 	
-	links_array.append({
+	var new_link = {
 		"joint": joint,
 		"line": line,
 		"area": area,
 		"a": object_a,
 		"b": object_b,
+		"local_a": local_a,
+		"local_b": local_b,
 		"is_spring": (link_type == 1),
 		"collide": bodies_collide
-	})
+	}
+	links_array.append(new_link)
+	select_link(new_link)
 
 func update_selected_link():
 	if selected_link and is_instance_valid(selected_link["joint"]):

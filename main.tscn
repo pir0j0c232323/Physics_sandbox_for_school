@@ -109,7 +109,8 @@ custom_maximum_size = Vector2(-1, 80)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 20.0
+offset_right = 2.0
+offset_bottom = 31.0
 grow_horizontal = 2
 
 [node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel" unique_id=1817207836]
@@ -130,6 +131,50 @@ text = "▭"
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 text = "△"
+
+[node name="PruzinaButton" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=2063446693]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+text = "пружина"
+
+[node name="NitButton" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=2039107401]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+text = "нить"
+
+[node name="MagnetButton" type="Button" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=869694021]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+text = "магнит"
+
+[node name="Жесткость пружины" type="Label" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=257089073]
+layout_mode = 2
+text = "k"
+
+[node name="Stiffness_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=1171224215]
+layout_mode = 2
+
+[node name="Длинна" type="Label" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=1557039765]
+layout_mode = 2
+text = "L"
+
+[node name="Length_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=1762810039]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer" unique_id=180672709]
+layout_mode = 2
+
+[node name="collision_object" type="CheckButton" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer" unique_id=1786466984]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Длинна2" type="Label" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer" unique_id=1822808295]
+layout_mode = 2
+
+[node name="AutoLength_CheckBox" type="CheckBox" parent="CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer" unique_id=1804582893]
+layout_mode = 2
+text = "Auto L
+"
 
 [node name="VSplitContainer" type="VSplitContainer" parent="CanvasLayer/VBoxContainer" unique_id=436612331]
 layout_mode = 2
@@ -288,48 +333,6 @@ text = "РАВНОСТОРОННИЙ"
 layout_mode = 2
 text = "Обьект статичен"
 
-[node name="Связь" type="VBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer" unique_id=952074620]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 2
-
-[node name="Pruzina_Button2" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=527579753]
-layout_mode = 2
-text = "Пружина"
-
-[node name="Nit_Button" type="Button" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1953248087]
-layout_mode = 2
-text = "Нить
-"
-
-[node name="Жесткость пружины" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=257089073]
-layout_mode = 2
-text = "ЖЁСТКОСТЬ ПРУЖИНЫ"
-
-[node name="Stiffness_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1171224215]
-layout_mode = 2
-
-[node name="Длинна" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1557039765]
-layout_mode = 2
-text = "ДЛИНА"
-
-[node name="Length_SpinBox" type="SpinBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1762810039]
-layout_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=180672709]
-layout_mode = 2
-
-[node name="Длинна2" type="Label" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer" unique_id=206735970]
-layout_mode = 2
-
-[node name="collision_object" type="CheckButton" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь/HBoxContainer" unique_id=1786466984]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="AutoLength_CheckBox" type="CheckBox" parent="CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Связь" unique_id=1804582893]
-layout_mode = 2
-text = "Auto"
-
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1415401202]
 position = Vector2(500, 540)
 
@@ -347,6 +350,11 @@ script = ExtResource("7_5vw27")
 
 [node name="LinkManager" type="Node" parent="." unique_id=1226318020]
 script = ExtResource("9_dg77c")
+
+[node name="PreviewLine" type="Line2D" parent="LinkManager" unique_id=129602699]
+visible = false
+width = 3.0
+default_color = Color(0.93333334, 0, 0.07058824, 0.5372549)
 
 [node name="InputHandler" type="Node" parent="." unique_id=433752903]
 script = ExtResource("10_ycdy4")

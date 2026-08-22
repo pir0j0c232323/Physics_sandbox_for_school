@@ -15,6 +15,7 @@ var original_mask = 1
 func _physics_process(_delta):
 	if is_dragging == true and is_instance_valid(grabbed_object):
 		grabbed_object.global_position = get_parent().get_global_mouse_position() + grab_offset
+		apply_snapping()
 
 func _unhandled_input(event):
 	if drawer.is_active():
@@ -124,3 +125,54 @@ func delete_selected_object():
 	selection.selected_object = null
 	selection.reset_inspector_ui()
 	print("Выделенные объекты удалены!")
+
+func get_dynamic_anchors(body: Node2D) -> Array:
+	var anchors = []
+	if not is_instance_valid(body): return anchors
+	
+	anchors.append(body.global_position) # Центр объекта
+	
+	for child in body.get_children():
+		if child is Polygon2D:
+			for p in child.polygon:
+				# Используем global_position самого полигона для точности
+				anchors.append(child.to_global(p))
+		elif child.is_in_group("magnets"):
+			anchors.append(child.global_position)
+			
+	return anchors
+	
+func apply_snapping():
+	var snap_distance = 25.0
+	var best_offset = Vector2.ZERO
+	var min_dist = snap_distance
+	var found_snap = false
+
+	# Желаемая позиция объекта строго за мышкой
+	var target_pos = get_parent().get_global_mouse_position() + grab_offset
+	
+	# Временно смещаем объект туда, куда хочет мышь, чтобы правильно посчитать точки
+	grabbed_object.global_position = target_pos
+
+	var other_bodies = get_parent().get_children()
+	var my_anchors = get_dynamic_anchors(grabbed_object)
+
+	for other_body in other_bodies:
+		if other_body == grabbed_object or not (other_body is RigidBody2D): 
+			continue
+		
+		var other_anchors = get_dynamic_anchors(other_body)
+		
+		for my_anchor in my_anchors:
+			for other_anchor in other_anchors:
+				var dist = my_anchor.distance_to(other_anchor)
+				if dist < min_dist:
+					min_dist = dist
+					found_snap = true
+					best_offset = other_anchor - my_anchor
+
+	# Если нашли магнит, применяем смещение поверх позиции мыши
+	if found_snap:
+		grabbed_object.global_position = target_pos + best_offset
+	else:
+		grabbed_object.global_position = target_pos

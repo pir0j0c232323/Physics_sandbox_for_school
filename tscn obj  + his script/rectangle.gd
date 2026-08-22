@@ -16,6 +16,7 @@ func _ready() -> void:
 	orig_color = custom_color
 	$Polygon2D.modulate = orig_color
 
+
 func set_static(value: bool):
 	is_static = value
 	refresh_outline()

@@ -17,14 +17,15 @@ var magnet_crosshair: Node2D = null # Зеленый лазерный прице
 # Твои актуальные пути к элементам сверху
 @onready var selection = $"../SelectionManager"
 @onready var tab_container = $"/root/Main/CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer"
-@onready var length_spin = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/Length_SpinBox"
-@onready var stiffness_spin = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/Stiffness_SpinBox"
-@onready var auto_length_check = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer/AutoLength_CheckBox"
+@onready var length_spin = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/HBoxContainer2/Length_SpinBox"
+@onready var stiffness_spin = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/HBoxContainer2/HBoxContainer/Stiffness_SpinBox"
+@onready var k_container = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/HBoxContainer2/HBoxContainer"
+@onready var auto_length_check = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/HBoxContainer/AutoLength_CheckBox"
 @onready var nit_button = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/NitButton"
 @onready var pruzina_button = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/PruzinaButton"
 @onready var magnet_button = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/MagnetButton"
-@onready var colision_objects = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer/collision_object"
-@onready var label_collision_buton = $"../CanvasLayer/VBoxContainer/HBoxContainer/ToolsContainer/MechanicsPanel/HBoxContainer/HBoxContainer/Длинна2"
+@onready var colision_objects = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/HBoxContainer/collision_object"
+@onready var label_collision_buton = $"../CanvasLayer/VBoxContainer/VSplitContainer/HSplitContainer/RightPanel/TabContainer/Object/HBoxContainer/Длинна2"
 
 func _ready():
 	if length_spin:
@@ -53,7 +54,7 @@ func _ready():
 	magnet_crosshair.z_index = 20
 	magnet_crosshair.draw.connect(_on_magnet_crosshair_draw)
 	get_parent().call_deferred("add_child", magnet_crosshair)
-
+	k_container.hide()
 func _process(_delta):
 	magnet_crosshair.queue_redraw()
 	magnet_crosshair.visible = (current_tool == ToolMode.MAGNET)
@@ -83,21 +84,33 @@ func _process(_delta):
 			else:
 				preview_line.set_point_position(0, pos_a)
 				preview_line.set_point_position(1, pos_b)
+	_update_k_ui_visibility()
 
-func get_snap_position(mouse_pos: Vector2, body: Node2D) -> Vector2:
-	var best_pos = body.global_position
-	var best_dist = mouse_pos.distance_to(best_pos)
+func get_dynamic_anchors(body: Node2D) -> Array:
+	var anchors = []
+	anchors.append(body.global_position) # Добавляем центр фигуры
 	
 	for child in body.get_children():
-		if child.is_in_group("magnets"):
-			var dist = mouse_pos.distance_to(child.global_position)
-			if dist < best_dist:
-				best_dist = dist
-				best_pos = child.global_position
-				
-	if best_dist < 50.0:
-		return best_pos
-	return mouse_pos
+		if child is Polygon2D:
+			for p in child.polygon:
+				anchors.append(body.to_global(p)) # Добавляем каждый угол фигуры
+		elif child.is_in_group("magnets"):
+			anchors.append(child.global_position) # Добавляем магниты
+			
+	return anchors
+
+func get_snap_position(mouse_pos: Vector2, body: Node2D) -> Vector2:
+	var best_pos = mouse_pos
+	var best_dist = 20.0 
+	
+	var anchors = get_dynamic_anchors(body)
+	for anchor in anchors:
+		var dist = mouse_pos.distance_to(anchor)
+		if dist < best_dist:
+			best_dist = dist
+			best_pos = anchor
+			
+	return best_pos
 
 func _on_magnet_crosshair_draw():
 	if current_tool == ToolMode.MAGNET:
@@ -330,3 +343,16 @@ func update_spring_line(line: Line2D, a: Vector2, b: Vector2):
 		if i == 1 or i == segments - 1:
 			current_width = coil_width * 0.5
 		line.set_point_position(i, base_pos + perp * current_width * sign_val)
+
+func _update_k_ui_visibility():
+	# 1. Активен ли режим создания пружины
+	var is_creating_spring = (current_tool == ToolMode.SPRING)
+	
+	# 2. Выделена ли уже созданная пружина
+	var is_spring_selected = false
+	if selected_link != null and selected_link.get("is_spring", false):
+		is_spring_selected = true
+		
+	# Показываем контейнер с k только при создании или выделении пружины
+	if k_container:
+		k_container.visible = is_creating_spring or is_spring_selected

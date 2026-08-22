@@ -28,6 +28,11 @@ var grabbed_index: int = -1   # какую вершину полигона де�
 var grabbed_sign: int = 1
 var grab_offset: Vector2 = Vector2.ZERO
 
+# Порог притягивания в пикселях (на каком расстоянии край объекта "почувствует" точку)
+@export var snap_distance: float = 12.0
+
+# Включатель/выключатель магнита (удобно, если захочешь отключать его, например, зажатием Shift)
+@export var snap_enabled: bool = true
 @onready var camera = $"../Camera2D"
 @onready var drawer = $"../Shape_drawer"
 @onready var sim = $"../SimulationController"
@@ -175,8 +180,16 @@ func _process(delta):
 			queue_redraw()
 			return
 		locked_angle = -1.0
+		
+		# 1. Считываем мышь
 		var mouse = get_global_mouse_position()
-		var target = mouse + grab_offset   # ← мышь + куда схватили
+		var raw_target = mouse + grab_offset
+		
+		# 2. Пропускаем через магнит
+		var snap_points: Array[Vector2] = _get_all_vertex_points()
+		var target = get_snapped_position(raw_target, snap_points)
+
+		# 3. Применяем размер для КРУГА (скорее всего, этот блок потерялся)
 		var circ = _selected_circle()
 		if circ:
 			handle_angle = (target - circ.global_position).angle()
@@ -184,9 +197,11 @@ func _process(delta):
 			sync_inspector_ui(circ)
 			queue_redraw()
 			return
+			
+		# 4. Применяем размер для ПРЯМОУГОЛЬНИКА
 		var rect = _selected_rect()
 		if rect:
-			var local = rect.to_local(target) 
+			var local = rect.to_local(target)
 			var s = rect.get_size_px()
 			if grabbed_axis == "W":
 				var fixed = -grabbed_sign * s.x / 2.0
@@ -201,6 +216,8 @@ func _process(delta):
 			sync_inspector_ui(rect)
 			queue_redraw()
 			return
+			
+		# 5. Применяем размер для ПОЛИГОНА
 		var poly = _selected_poly()
 		if poly and grabbed_index >= 0:
 			poly.set_point_world(grabbed_index, target)
@@ -208,6 +225,7 @@ func _process(delta):
 			queue_redraw()
 			return
 
+	# Обновляем интерфейс и сетку, если ничего не редактируется
 	var obj = selected_object if is_instance_valid(selected_object) else null
 	var snap = [
 		obj.get_instance_id() if obj else 0,
@@ -740,9 +758,63 @@ func try_add_vertex(pos) -> bool:
 	queue_redraw()
 	return true
 	
+func get_snapped_position(target_pos: Vector2, snap_targets: Array[Vector2]) -> Vector2:
+	# Если магнит отключён, возвращаем точку без изменений
+	if not snap_enabled:
+		return target_pos
+
+	var best_pos = target_pos
+	var min_dist = snap_distance
+
+	# Проверяем каждую доступную точку привязки (из сетки или других объектов)
+	for snap_pt in snap_targets:
+		# Считаем разницу по координатам X и Y отдельно
+		var dist_x = abs(target_pos.x - snap_pt.x)
+		var dist_y = abs(target_pos.y - snap_pt.y)
+
+		# Если по оси X подошли достаточно близко — "прилипаем" по X
+		if dist_x < min_dist:
+			best_pos.x = snap_pt.x
+
+		# Если по оси Y подошли достаточно близко — "прилипаем" по Y
+		if dist_y < min_dist:
+			best_pos.y = snap_pt.y
+
+	return best_pos
 	
+func _get_all_vertex_points() -> Array[Vector2]:
+	var points: Array[Vector2] = []
 	
-	
+	# Ищем объекты не внутри sim, а у общего родителя (на всей сцене)
+	for obj in get_parent().get_children():
+		# Пропускаем выделенный объект и всё, что не является фигурами
+		if obj == selected_object or not (obj.has_method("get_size_px") or obj.has_method("get_point_world")):
+			continue 
+			
+		# 1. Центр объекта
+		points.append(obj.global_position)
+		
+		# 2. Вершины полигона
+		if obj.has_method("get_point_world"):
+			for i in range(obj.get_points_count()):
+				points.append(obj.get_point_world(i))
+				
+		# 3. Грани прямоугольников/кругов
+		elif obj.has_method("get_size_px"):
+			var size = obj.get_size_px()
+			if size is Vector2:
+				var ext = size / 2.0
+				points.append(obj.to_global(Vector2(-ext.x, -ext.y)))
+				points.append(obj.to_global(Vector2(ext.x, -ext.y)))
+				points.append(obj.to_global(Vector2(ext.x, ext.y)))
+				points.append(obj.to_global(Vector2(-ext.x, ext.y)))
+			else:
+				points.append(obj.global_position + Vector2(size, 0))
+				points.append(obj.global_position + Vector2(-size, 0))
+				points.append(obj.global_position + Vector2(0, size))
+				points.append(obj.global_position + Vector2(0, -size))
+				
+	return points
 	
 	
 	
